@@ -8,6 +8,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
+#include <fcntl.h>
+#include <linux/input.h>
 
 static uint16_t __key_to_ascii(uint16_t _c);
 

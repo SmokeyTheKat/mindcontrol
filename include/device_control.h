@@ -2,15 +2,7 @@
 #define __MINDCONTROL_DEVICE_CONTROL_H__
 
 #include "vec.h"
-
-#include <X11/X.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/XTest.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdint.h>
-#include <linux/input.h>
 
 #define KEY_RELEASE 0x00
 #define KEY_PRESS    0x01
