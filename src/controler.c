@@ -81,11 +81,9 @@ void controler_init(int port)
 			struct vec pos = device_control_cursor_get();
 			if (pos.x <= 0 && pos.y != 0)
 			{
-				device_control_keyboard_disable();
 				state = 1;
-				char data[data_length*2] = {0};
-				sprintf(data, "[" COMMAND_CURSOR_TO "%d %d]", SCALE_X(screen_size.x - 5), SCALE_Y(pos.y));
-				dsocket_tcp_server_send(server, client, data, strlen(data));
+				device_control_keyboard_disable();
+				send_command(COMMAND_CURSOR_TO, "%d %d", SCALE_X(screen_size.x - 5), SCALE_Y(pos.y));
 			}
 			continue;
 		}

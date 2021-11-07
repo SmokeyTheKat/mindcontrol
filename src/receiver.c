@@ -92,8 +92,8 @@ void receiver_init(char* ip, int port)
 				//printf("COMMAND_CURSOR_UPDATE\n");
 				struct vec pos;
 				data_get_value(&data, "%d %d", &pos.x, &pos.y);
-				pos.x = (int)(((float)pos.x) * 2.0);
-				pos.y = (int)(((float)pos.y) * 2.0);
+				pos.x = (int)(((float)pos.x) * mouse_speed);
+				pos.y = (int)(((float)pos.y) * mouse_speed);
 				device_control_cursor_move(pos.x, pos.y);
 			}
 			if (IS_COMMAND(COMMAND_CURSOR_TO, data))

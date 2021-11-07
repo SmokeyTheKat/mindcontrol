@@ -6,6 +6,7 @@
 char* server_ip = "0.0.0.0";
 int server_port = 0;
 char user_type = 't';
+int mouse_speed = 1;
 
 void read_args(int argc, char** argv)
 {
@@ -19,6 +20,11 @@ void read_args(int argc, char** argv)
 		else if (!strcmp(argv[i], "-port"))
 		{
 			server_port = atoi(argv[i+1]);
+			i++;
+		}
+		else if (!strcmp(argv[i], "-mspeed"))
+		{
+			mouse_speed = atoi(argv[i+1]);
 			i++;
 		}
 		else user_type = argv[i][0];
