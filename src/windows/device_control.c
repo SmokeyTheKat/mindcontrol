@@ -6,6 +6,7 @@
 #include <winuser.h>
 
 #include "ddcSocket.h"
+#include "config.h"
 
 struct vec screen_size;
 
@@ -131,7 +132,7 @@ void device_control_cursor_scroll(int dir)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = dir;
+	ip.mi.mouseData = -dir * scroll_speed;
 	ip.mi.dwFlags = MOUSEEVENTF_WHEEL;
 	SendInput(1, &ip, sizeof(ip));
 }
