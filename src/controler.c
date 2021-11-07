@@ -3,22 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <sys/poll.h>
-#include <sys/select.h>
 
 #include "device_control.h"
 #include "commands.h"
 #include "utils.h"
 #include "ddcSocket.h"
+#include "config.h"
 
 #define data_length (4096)
-
-#define SCREEN_WIDTH 1920
-#define SCREEN_HEIGHT 1080
-#define SCREEN_SCALE 10000
 
 static struct dsocket_tcp_server server;
 static int client;
@@ -41,11 +33,8 @@ static void _send_command(char* fmt, ...)
 	dsocket_tcp_server_send(server, client, buffer, strlen(buffer));
 }
 
-#ifdef __unix__
 
-void* controler_receive(void* vclient)
-{
-	int client = *(int*)vclient;
+CREATE_THREAD(controler_receive, int, client, {
 	while (1)
 	{
 		char buffer[4096] = {0};
@@ -61,35 +50,9 @@ void* controler_receive(void* vclient)
 			}
 		} while ((data = extract_command(0)));
 	}
-}
 
-#endif
+});
 
-#ifdef __WIN64
-
-#include <windows.h>
-
-DWORD WINAPI controler_receive(LPVOID lp_client)
-{
-	int client = *(int*)lp_client;
-	while (1)
-	{
-		char buffer[4096] = {0};
-		dsocket_tcp_server_receive(server, client, buffer, sizeof(buffer));
-		char* data = extract_command(buffer);
-		do
-		{
-			if (IS_COMMAND(COMMAND_RETURN, data))
-			{
-				state = 2;
-				data_get_value(&data, "%d", &gy);
-				gy = UNSCALE_Y(gy);
-			}
-		} while ((data = extract_command(0)));
-	}
-}
-
-#endif
 
 void controler_init(int port)
 {
@@ -98,15 +61,10 @@ void controler_init(int port)
 	dsocket_tcp_server_start_listen(&server);
 	client = dsocket_tcp_server_listen(&server);
 
-#ifdef __unix__
-	pthread_t controler_thread;
-	pthread_create(&controler_thread, 0, controler_receive, &client);
-#endif
+	THREAD_CALL(controler_receive, &client);
 
-#ifdef __WIN64
-	DWORD controler_thread;
-	HANDLE controler_handle = CreateThread(0, 0, controler_receive, &client;, 0, &controler_thread);
-#endif
+	bool old_mouse_left = false;
+	bool old_mouse_right = false;
 
 	while (1)
 	{
@@ -126,7 +84,7 @@ void controler_init(int port)
 				device_control_keyboard_disable();
 				state = 1;
 				char data[data_length*2] = {0};
-				sprintf(data, "[" COMMAND_CURSOR_TO "%d %d]", SCALE_X(SCREEN_WIDTH - 5), SCALE_Y(pos.y));
+				sprintf(data, "[" COMMAND_CURSOR_TO "%d %d]", SCALE_X(screen_size.x - 5), SCALE_Y(pos.y));
 				dsocket_tcp_server_send(server, client, data, strlen(data));
 			}
 			continue;
@@ -137,21 +95,30 @@ void controler_init(int port)
 		if (mouse_state.ready)
 		{
 	
-			if (mouse_state.x > 90 || mouse_state.x < -90 ||
-				mouse_state.y > 90 || mouse_state.y < -90)
+			if (mouse_state.x > 30 || mouse_state.x < -30 ||
+				mouse_state.y > 30 || mouse_state.y < -30)
 					continue;
 	
 			struct vec pos = {mouse_state.x, mouse_state.y};
-			device_control_cursor_move_to(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+			device_control_cursor_move_to(screen_size.x, screen_size.y / 2);
 			send_command(COMMAND_CURSOR_UPDATE, "%d %d", pos.x, pos.y);
 
 			if (mouse_state.scroll) send_command(COMMAND_SCROLL, "%d", mouse_state.scroll);
 	
-			if (mouse_state.left) send_command(COMMAND_LEFT_DOWN, "", 0);
-			else send_command(COMMAND_LEFT_UP, "", 0);
+			if (mouse_state.left != old_mouse_left)
+			{
+				if (mouse_state.left) send_command(COMMAND_LEFT_DOWN, "", 0);
+				else send_command(COMMAND_LEFT_UP, "", 0);
+				old_mouse_left = mouse_state.left;
+			}
 	
-			if (mouse_state.right) send_command(COMMAND_RIGHT_DOWN, "", 0);
-			else send_command(COMMAND_RIGHT_UP, "", 0);
+			if (mouse_state.right != old_mouse_right)
+			{
+				if (mouse_state.right) send_command(COMMAND_RIGHT_DOWN, "", 0);
+				else send_command(COMMAND_RIGHT_UP, "", 0);
+				old_mouse_right = mouse_state.right;
+			}
+
 		}
 		if (key_event.ready)
 		{

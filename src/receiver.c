@@ -4,16 +4,12 @@
 #include <stdbool.h>
 #include <string.h>
 
-
 #include "ddcSocket.h"
 #include "device_control.h"
 #include "commands.h"
 #include "vec.h"
 #include "utils.h"
-
-#define SCREEN_WIDTH 1366
-#define SCREEN_HEIGHT 768
-#define SCREEN_SCALE 10000
+#include "config.h"
 
 static struct dsocket_tcp_client client;
 
@@ -43,28 +39,34 @@ void receiver_init(char* ip, int port)
 
 		char* data = extract_command(buffer);
 		if (data == 0) continue;
+		//printf("%s\n", data);
 		do
 		{
 			if (IS_COMMAND(COMMAND_LEFT_UP, data))
 			{
+				//printf("COMMAND_LEFT_UP\n");
 				device_control_cursor_left_up();
 			}
 			else if (IS_COMMAND(COMMAND_LEFT_DOWN, data))
 			{
+				//printf("COMMAND_LEFT_DOWN\n");
 				device_control_cursor_left_down();
 			}
 	
 			if (IS_COMMAND(COMMAND_RIGHT_UP, data))
 			{
+				//printf("COMMAND_RIGHT_UP\n");
 				device_control_cursor_right_up();
 			}
 			else if (IS_COMMAND(COMMAND_RIGHT_DOWN, data))
 			{
+				//printf("COMMAND_RIGHT_DOWN\n");
 				device_control_cursor_right_down();
 			}
 	
 			if (IS_COMMAND(COMMAND_SCROLL, data))
 			{
+				//printf("COMMAND_SCROLL\n");
 				int scroll;
 				data_get_value(&data, "%d", &scroll);
 				device_control_cursor_scroll(scroll);
@@ -72,41 +74,45 @@ void receiver_init(char* ip, int port)
 	
 			if (IS_COMMAND(COMMAND_KEYPRESS, data))
 			{
+				//printf("COMMAND_KEYPRESS\n");
 				int keycode;
 				data_get_value(&data, "%d", &keycode);
-				device_control_keyboard_send_press(keycode);
+				device_control_keyboard_send_press(generic_code_to_system_code(keycode));
 			}
 			if (IS_COMMAND(COMMAND_KEYRELEASE, data))
 			{
+				//printf("COMMAND_KEYRELEASE\n");
 				int keycode;
 				data_get_value(&data, "%d", &keycode);
-				device_control_keyboard_send_release(keycode);
+				device_control_keyboard_send_release(generic_code_to_system_code(keycode));
 			}
 	
 			if (IS_COMMAND(COMMAND_CURSOR_UPDATE, data))
 			{
+				//printf("COMMAND_CURSOR_UPDATE\n");
 				struct vec pos;
 				data_get_value(&data, "%d %d", &pos.x, &pos.y);
-				pos.x = (int)(((float)pos.x) * 5.5);
-				pos.y = (int)(((float)pos.y) * 5.5);
+				pos.x = (int)(((float)pos.x) * 2.0);
+				pos.y = (int)(((float)pos.y) * 2.0);
 				device_control_cursor_move(pos.x, pos.y);
 			}
 			if (IS_COMMAND(COMMAND_CURSOR_TO, data))
 			{
+				//printf("COMMAND_CURSOR_TO\n");
 				struct vec pos;
 				data_get_value(&data, "%d %d", &pos.x, &pos.y);
 				pos.x = UNSCALE_X(pos.x);
 				pos.y = UNSCALE_Y(pos.y);
-				printf("%d %d\n", pos.x, pos.y);
+				//printf("%d %d\n", pos.x, pos.y);
 				device_control_cursor_move_to(pos.x, pos.y);
 			}
 		} while ((data = extract_command(0)));
-		
+
 		struct vec pos = device_control_cursor_get();
-		if (pos.x >= SCREEN_WIDTH - 1)
+		if (pos.x >= screen_size.x - 1)
 		{
 			send_command(COMMAND_RETURN, "%d", SCALE_Y(pos.y));
-			device_control_cursor_move_to(SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
+			device_control_cursor_move_to(screen_size.x / 2, screen_size.y / 2);
 		}
 	}
 }

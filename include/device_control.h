@@ -13,6 +13,7 @@ struct mouse_state;
 struct key_event;
 
 void device_control_init(void);
+struct vec device_control_get_screen_size(void);
 void device_control_keyboard_disable(void);
 void device_control_keyboard_enable(void);
 void device_control_cursor_move(int x, int y);
@@ -31,6 +32,8 @@ struct vec device_control_cursor_on_move_get(void);
 struct vec device_control_cursor_on_move_get_relative(void);
 struct mouse_state device_control_get_mouse_state(void);
 struct key_event device_control_get_keyboard_event(void);
+uint16_t generic_code_to_system_code(uint16_t _c);
+uint16_t key_code_to_generic_code(uint16_t _c);
 
 
 struct mouse_state
@@ -47,5 +50,7 @@ struct key_event
 	uint16_t key;
 	uint32_t action;
 };
+
+extern struct vec screen_size;
 
 #endif
