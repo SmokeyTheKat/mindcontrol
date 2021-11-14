@@ -3,6 +3,8 @@
 #ifdef __unix__
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <netinet/tcp.h>
 
 void dsocket_init(void) {};
 
@@ -107,7 +109,6 @@ int dsocket_tcp_server_listen(struct dsocket_tcp_server* sck)
 }
 int dsocket_tcp_server_send(struct dsocket_tcp_server sck, int client, const char* data, long length)
 {
-	printf("%s\n", data);
 	send(client, data, length, 0);
 	return 1;
 }

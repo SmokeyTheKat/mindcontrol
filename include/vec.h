@@ -10,5 +10,6 @@ struct vec
 
 bool vec_compare(struct vec a, struct vec b);
 struct vec vec_sub(struct vec a, struct vec b);
+struct vec vec_limit(struct vec vec, struct vec limit);
 
 #endif

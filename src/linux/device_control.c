@@ -5,11 +5,18 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <X11/X.h>
+#include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
 #include <fcntl.h>
 #include <linux/input.h>
+#include <limits.h>
+#include <string.h>
+#include <X11/Xmu/Atoms.h>
+
+#include "utils.h"
+#include "clipboard.h"
 
 struct raw_key_event
 {
@@ -27,12 +34,16 @@ struct vec screen_size;
 static int mouse_fd;
 
 static int keyboard_fd;
-static uint16_t lkey = 0;
 
 static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
 
+#define MOUSE_X_NAME "Wacom Intuos4 6x9 Pen cursor"
+#define KEYBOARD_X_NAME "Kingston HyperX Alloy FPS Pro Mechanical Gaming Keyboard"
+
+
 void device_control_init(void)
 {
+	init_clipboard();
 	display = XOpenDisplay(0);
 	root_window = XRootWindow(display, 0);
 
@@ -41,7 +52,10 @@ void device_control_init(void)
 	int flags = fcntl(mouse_fd, F_GETFL, 0);
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
-	keyboard_fd = open("/dev/input/by-id/usb-Kingston_HyperX_Alloy_FPS_Pro_Mechanical_Gaming_Keyboard-event-kbd", O_RDONLY | O_NONBLOCK);
+	char keyboard_event_path[1024] = {0};
+	load_shell_command("find /dev/input/ | grep 'event-kbd' | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
+	keyboard_fd = open(keyboard_event_path, O_RDONLY | O_NONBLOCK);
+
 	flags = fcntl(mouse_fd, F_GETFL, 0);
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -59,13 +73,13 @@ struct vec device_control_get_screen_size(void)
 
 void device_control_keyboard_disable(void)
 {
-	FILE* fp = popen("xinput --disable 10 && xinput --disable 9", "r");
+	FILE* fp = popen("xinput --disable $(xinput | grep '" MOUSE_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --disable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
 	pclose(fp);
 }
 
 void device_control_keyboard_enable(void)
 {
-	FILE* fp = popen("xinput --enable 10 && xinput --enable 9", "r");
+	FILE* fp = popen("xinput --enable $(xinput | grep '" MOUSE_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --enable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
 	pclose(fp);
 }
 
@@ -157,10 +171,6 @@ struct vec device_control_cursor_get(void)
 	return pos;
 }
 
-void device_control_init_events(void)
-{
-}
-
 struct vec device_control_cursor_on_move_get(void)
 {
 	struct vec pos = device_control_cursor_get();
@@ -199,22 +209,34 @@ struct mouse_state device_control_get_mouse_state(void)
 
 struct key_event device_control_get_keyboard_event(void)
 {
-	struct raw_key_event ev[MAX_OVER_READ] = {0};
-	int bytes = read(keyboard_fd, ev, sizeof(ev));
-	if (bytes == -1) return (struct key_event){0};
-	ev[1].key = key_code_to_generic_code(ev[1].key);
-	if (ev[1].key) lkey = ev[1].key;
-	else ev[1].key = lkey;
-	if (ev[1].__type == 1) return (struct key_event){
-		.ready=true,
-		.key=ev[1].key,
-		.action=ev[1].action,
-	};
-	return (struct key_event){
-		.ready=true,
-		.key=lkey,
-		.action=KEY_PRESS
-	};
+	static uint16_t lkey = 0;
+
+	struct raw_key_event ev = {0};
+	read(keyboard_fd, &ev, sizeof(ev));
+
+	ev.key = key_code_to_generic_code(ev.key);
+
+	if (ev.key) lkey = ev.key;
+	else ev.key = lkey;
+
+	if (ev.__type == 1)
+	{
+		return (struct key_event){
+			.ready=true,
+			.key=ev.key,
+			.action=ev.action,
+		};
+	}
+	else return (struct key_event){0};
+}
+
+char* device_control_clipboard_get(void)
+{
+	return clipboard_get();
+}
+void device_control_clipboard_set(char* data)
+{
+	clipboard_set(data);
 }
 
 uint16_t key_code_to_generic_code(uint16_t _c)

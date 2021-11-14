@@ -39,7 +39,6 @@ void device_control_keyboard_enable(void)
 
 void device_control_cursor_move(int x, int y)
 {
-
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
 	ip.mi.mouseData = 0;
@@ -144,10 +143,6 @@ struct vec device_control_cursor_get(void)
 	return (struct vec){pos.x, pos.y};
 }
 
-void device_control_init_events(void)
-{
-}
-
 struct vec device_control_cursor_on_move_get(void)
 {
 	struct vec pos = device_control_cursor_get();
@@ -170,10 +165,35 @@ struct vec device_control_cursor_on_move_get_relative(void)
 
 struct mouse_state device_control_get_mouse_state(void)
 {
+	POINT pos;
+	GetCursorPos(&pos);
+	bool left = true == GetKeyState(1);
+	bool right = true == GetKeyState(2);
+	bool middle = true == GetKeyState(4);
+	return (struct mouse_state){
+		.ready=true,
+		.x=pos.x,
+		.y=pos.y,
+		.scroll=0,
+		.left=left,
+		.right=right,
+		.middle=middle,
+	};
 }
 
 struct key_event device_control_get_keyboard_event(void)
 {
+	return (struct key_event){0};
+}
+
+char* device_control_clipboard_get(void)
+{
+	return 0;
+}
+
+void device_control_clipboard_set(char* data)
+{
+	(void)data;
 }
 
 uint16_t generic_code_to_system_code(uint16_t _c)

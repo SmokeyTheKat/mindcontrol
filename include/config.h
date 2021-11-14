@@ -2,6 +2,7 @@
 #define __MINDCONTROL_CONFIG_H__
 
 #define SCREEN_SCALE 10000
+#define REST_TIME 10
 
 void read_args(int argc, char** argv);
 

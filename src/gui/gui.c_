@@ -1,0 +1,40 @@
+#include <gtk/gtk.h>
+
+static void print_hello(GtkWidget* widget, gpointer data)
+{
+	g_print(gtk_button_get_label(GTK_BUTTON(widget)));
+}
+
+static void activate(GtkApplication *app, gpointer user_data)
+{
+	GtkWidget* window = gtk_application_window_new(app);
+	gtk_window_set_title(GTK_WINDOW(window), "Window");
+	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
+
+	GtkWidget* grid = gtk_grid_new();
+	gtk_container_add(GTK_CONTAINER(window), grid);
+
+	GtkWidget* screen_buttons[9];
+
+	for (int i = 0; i < sizeof(screen_buttons)/sizeof(screen_buttons[0]); i++)
+	{
+		int x = i % 3;
+		int y = i / 3;
+		char* name = malloc(2);
+		name[0] = '0' + i + 1;
+		name[1] = 0;
+		screen_buttons[i] = gtk_button_new_with_label(name);
+		g_signal_connect(screen_buttons[i], "clicked", G_CALLBACK(print_hello), NULL);
+		gtk_grid_attach(GTK_GRID(grid), screen_buttons[i], x, y, 1, 1);
+	}
+
+	gtk_widget_show_all(window);
+}
+int main (int argc, char** argv)
+{
+	GtkApplication* app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
+	g_signal_connect(app, "activate", G_CALLBACK (activate), NULL);
+	int status = g_application_run(G_APPLICATION (app), argc, argv);
+	g_object_unref (app);
+	return status;
+}

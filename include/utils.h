@@ -10,9 +10,16 @@
 #define SCALE_X(_x) ((_x) * SCREEN_SCALE / screen_size.x)
 #define SCALE_Y(_y) ((_y) * SCREEN_SCALE / screen_size.y)
 
+#define ABS(v) (((v) < 0) ? (-v) : (v))
+#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define NOBJ(t) &(t){0}
+
 #ifdef __WIN64
 
 #include <windows.h>
+
+#define SLEEP Sleep
 
 #define THREAD_CALL(_func, _arg) { \
 		DWORD _thread; \
@@ -32,6 +39,8 @@
 
 #include <pthread.h>
 
+#define SLEEP(_t) usleep((_t)*1000)
+
 #define THREAD_CALL(_func, _arg) { \
 		pthread_t _thread; \
 		pthread_create(&_thread, 0, (_func), (_arg)); \
@@ -48,5 +57,7 @@
 
 char* extract_command(char* _data);
 void data_get_value(char** data, char* fmt, ...);
+void data_get_string(char** data, char* output);
+void load_shell_command(char* command, char* buffer, int length);
 
 #endif
