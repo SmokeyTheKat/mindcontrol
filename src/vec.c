@@ -4,7 +4,7 @@
 
 bool vec_compare(struct vec a, struct vec b)
 {
-	return a.x == b.x && a.y == b.y;
+	return (a.x == b.x) && (a.y == b.y);
 }
 
 struct vec vec_sub(struct vec a, struct vec b)
@@ -22,4 +22,9 @@ struct vec vec_limit(struct vec vec, struct vec limit)
 		out.y = vec.y;
 	else out.y = limit.y;
 	return out;
+}
+
+bool vec_is_above_limit(struct vec vec, struct vec limit)
+{
+	return (ABS(vec.x) > ABS(limit.x)) || (ABS(vec.y) > ABS(limit.y));
 }

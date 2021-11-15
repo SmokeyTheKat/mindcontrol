@@ -13,7 +13,11 @@ struct client
 {
 	bool active;
 	int sck;
-	struct vec pos;
+	char ip[16];
+	struct client* left;
+	struct client* right;
+	struct client* up;
+	struct client* down;
 };
 
 #endif

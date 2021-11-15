@@ -22,9 +22,9 @@ int get_scaled_x_by_edge(int edge)
 	switch (edge)
 	{
 		case EDGE_RIGHT:
-			return SCALE_X(screen_size.x - 50);
+			return SCALE_X(screen_size.x - 5);
 		case EDGE_LEFT:
-			return SCALE_X(50);
+			return SCALE_X(5);
 	}
 	return 0;
 }
@@ -52,7 +52,7 @@ struct vec get_vec_close_to_edge(struct vec pos, int edge)
 		case EDGE_TOP:
 			return (struct vec){pos.x, 5};
 		case EDGE_BOTTOM:
-			return (struct vec){pos.x, screen_size.x - 6};
+			return (struct vec){pos.x, screen_size.y - 6};
 	}
 	return (struct vec){0, 0};
 }
