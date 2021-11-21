@@ -1,6 +1,6 @@
 PREFIX=~/.local
 
-CFLAGS=-I./include/ -Ofast -Wall -g 
+CFLAGS=-I./include/ -Ofast -fno-stack-protector -Wall -g
 CSRCS=$(shell find ./src/ -type f -name "*.c")
 
 LINUX_CC=gcc

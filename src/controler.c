@@ -224,7 +224,6 @@ void forward_mouse_input(struct mouse_state mouse_state)
 	device_control_cursor_move_to(screen_size.x / 2, screen_size.y / 2);
 
 	struct vec vel = {mouse_state.x, mouse_state.y};
-	if (vec_is_above_limit(vel, MAX_VEL)) return;
 	send_command(COMMAND_CURSOR_UPDATE, "%d %d", vel.x, vel.y);
 
 	if (mouse_state.scroll) send_command(COMMAND_SCROLL, "%d", mouse_state.scroll);

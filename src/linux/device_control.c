@@ -37,7 +37,7 @@ static int keyboard_fd;
 
 static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
 
-#define MOUSE_X_NAME "Wacom Intuos4 6x9 Pen cursor"
+#define MOUSE_X_NAME "Logitech M720 Triathlon"
 #define KEYBOARD_X_NAME "Kingston HyperX Alloy FPS Pro Mechanical Gaming Keyboard"
 
 
@@ -73,13 +73,13 @@ struct vec device_control_get_screen_size(void)
 
 void device_control_keyboard_disable(void)
 {
-	FILE* fp = popen("xinput --disable $(xinput | grep '" MOUSE_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --disable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
+	FILE* fp = popen("xinput --disable $(xinput | grep '" MOUSE_X_NAME "' | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --disable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
 	pclose(fp);
 }
 
 void device_control_keyboard_enable(void)
 {
-	FILE* fp = popen("xinput --enable $(xinput | grep '" MOUSE_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --enable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
+	FILE* fp = popen("xinput --enable $(xinput | grep '" MOUSE_X_NAME "' | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --enable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
 	pclose(fp);
 }
 
