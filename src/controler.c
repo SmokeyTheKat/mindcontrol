@@ -201,6 +201,9 @@ static void switch_to_client_on_edge(int edge_hit)
 	control_state.state = CONTROL_STATE_CLIENT;
 	device_control_keyboard_disable();
 	device_control_get_mouse_state();
+
+	device_control_keyboard_flush();
+	device_control_mouse_flush();
 }
 
 static void handel_local_control(void)

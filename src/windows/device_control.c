@@ -163,6 +163,14 @@ struct vec device_control_cursor_on_move_get_relative(void)
 	}
 }
 
+void device_control_keyboard_flush(void)
+{
+}
+
+void device_control_mouse_flush(void)
+{
+}
+
 struct mouse_state device_control_get_mouse_state(void)
 {
 	POINT pos;

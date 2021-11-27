@@ -53,7 +53,7 @@ void device_control_init(void)
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
 	char keyboard_event_path[1024] = {0};
-	load_shell_command("find /dev/input/ | grep 'event-kbd' | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
+	load_shell_command("find /dev/input/ | grep 'event-kbd' | tac | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
 	keyboard_fd = open(keyboard_event_path, O_RDONLY | O_NONBLOCK);
 
 	flags = fcntl(mouse_fd, F_GETFL, 0);
@@ -73,13 +73,15 @@ struct vec device_control_get_screen_size(void)
 
 void device_control_keyboard_disable(void)
 {
-	FILE* fp = popen("xinput --disable $(xinput | grep '" MOUSE_X_NAME "' | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --disable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
+	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {} && \
+					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {}", "r");
 	pclose(fp);
 }
 
 void device_control_keyboard_enable(void)
 {
-	FILE* fp = popen("xinput --enable $(xinput | grep '" MOUSE_X_NAME "' | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g') && xinput --enable $(xinput | grep '" KEYBOARD_X_NAME "' | tac | head -n1 | grep -o 'id=[0-9].\\s' | sed 's/id=//g')", "r");
+	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {} && \
+					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {}", "r");
 	pclose(fp);
 }
 
@@ -189,6 +191,18 @@ struct vec device_control_cursor_on_move_get_relative(void)
 		struct vec new_pos = device_control_cursor_get();
 		if (!vec_compare(pos, new_pos)) return vec_sub(new_pos, pos);
 	}
+}
+
+void device_control_keyboard_flush(void)
+{
+	char buffer[128];
+	while (read(keyboard_fd, buffer, sizeof(buffer)) > 0);
+}
+
+void device_control_mouse_flush(void)
+{
+	char buffer[128];
+	while (read(mouse_fd, buffer, sizeof(buffer)) > 0);
 }
 
 struct mouse_state device_control_get_mouse_state(void)
