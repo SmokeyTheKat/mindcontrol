@@ -1,6 +1,6 @@
 PREFIX=~/.local
 
-CFLAGS=-I./include/ -Ofast -fno-stack-protector -Wall -g
+CFLAGS=-I./include/ -Ofast -fno-stack-protector -Werror -Wall -g -pedantic
 CSRCS=$(shell find ./src/ -type f -name "*.c")
 
 LINUX_CC=gcc
@@ -9,7 +9,7 @@ LINUX_CFLAGS=`$(LINUX_PKG_CONFIG) --cflags gtk+-3.0` `$(LINUX_PKG_CONFIG) --libs
 
 WIN_CC=x86_64-w64-mingw32.static-gcc
 WIN_PKG_CONFIG=x86_64-w64-mingw32.static-pkg-config
-WIN_CFLAGS=-lws2_32 `$(WIN_PKG_CONFIG) --cflags gtk+-3.0` `$(WIN_PKG_CONFIG) --libs gtk+-3.0`
+WIN_CFLAGS=`$(WIN_PKG_CONFIG) --cflags gtk+-3.0` `$(WIN_PKG_CONFIG) --libs gtk+-3.0` -lws2_32 
 
 all: linux windows
 linux:

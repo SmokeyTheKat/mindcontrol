@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <netinet/tcp.h>
 
-void dsocket_init(void) {};
+void dsocket_init(void) {}
 
 struct dsocket_udp_client make_dsocket_udp_client(char* addr, int port)
 {

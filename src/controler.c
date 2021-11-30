@@ -24,7 +24,7 @@ static void forward_input(void);
 
 static struct dsocket_tcp_server server;
 
-static struct client c_client = (struct client){
+static struct client c_client = {
 	.active=false,
 	.sck=-1,
 	.ip={"192.168.1.41"},
@@ -33,7 +33,7 @@ static struct client c_client = (struct client){
 	.up=0,
 	.down=0,
 };
-static struct client server_client = (struct client){
+static struct client server_client = {
 	.active=true,
 	.sck=-1,
 	.ip={0},
@@ -167,13 +167,13 @@ CREATE_THREAD(controler_receive, void*, _, {
 			}
 		} while ((data = extract_command(0)));
 	}
-});
+})
 
 CREATE_THREAD(accept_clients, void*, _, {
 	(void)_;
 	get_client();
 	return 0;
-});
+})
 
 static void switch_state_to_main(void)
 {

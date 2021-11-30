@@ -122,7 +122,7 @@ static void clipboard_handel_owner_events(void)
 	}
 }
 
-void* clipboard_serve(void*)
+void* clipboard_serve(void* _)
 {
 	while (1)
 	{
