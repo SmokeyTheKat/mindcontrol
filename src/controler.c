@@ -28,41 +28,18 @@ static struct client* active_client;
 
 control_state_t control_state;
 
-struct client* get_client_by_ip(struct client* client, char* ip)
-{
-	if (client == 0) client = server_client;
-	if (!strcmp(ip, client->ip)) return client;
-	if (client->right)
-	{
-		struct client* new_client = get_client_by_ip(client->right, ip);
-		if (new_client) return new_client;
-	}
-	if (client->left)
-	{
-		struct client* new_client = get_client_by_ip(client->left, ip);
-		if (new_client) return new_client;
-	}
-	if (client->up)
-	{
-		struct client* new_client = get_client_by_ip(client->up, ip);
-		if (new_client) return new_client;
-	}
-	if (client->down)
-	{
-		struct client* new_client = get_client_by_ip(client->down, ip);
-		if (new_client) return new_client;
-	}
-	return 0;
-}
-
 struct client* get_client(void)
 {
 	int sck = dsocket_tcp_server_listen(&server);
 	char* ip = inet_ntoa(server.server.sin_addr);
 	printf("%s\n", ip);
-	struct client* client = get_client_by_ip(0, ip);
-	client->active = true;
-	client->sck = sck;
+	
+	struct client* client = client_find_by_ip(server_client, ip);
+//    while ((client = client_find_by_ip(server_client, ip)))
+//    {
+		client->active = true;
+		client->sck = sck;
+//    }
 	return client;
 }
 
@@ -139,11 +116,8 @@ CREATE_THREAD(controler_receive, void*, _, {
 					send_command(COMMAND_CURSOR_TO, "%d %d", SCALE_X(screen_size.x/2), SCALE_Y(screen_size.y/2));
 					active_client = next_client;
 
-					struct vec edge_pos = get_scaled_vec_close_to_edge((struct vec){x, y}, screen_direction);
+					struct vec edge_pos = get_scaled_vec_close_to_edge((struct vec){x, y}, other_edge(screen_direction));
 					send_command(COMMAND_CURSOR_TO, "%d %d", edge_pos.x, edge_pos.y);
-//                    send_command(COMMAND_CURSOR_TO, "%d %d",
-//                                 get_scaled_x_by_edge(other_edge(screen_direction)),
-//                                 SCALE_Y(y));
 					break;
 				}
 			}
@@ -153,7 +127,7 @@ CREATE_THREAD(controler_receive, void*, _, {
 
 CREATE_THREAD(accept_clients, void*, _, {
 	(void)_;
-	get_client();
+	while (1) get_client();
 	return 0;
 })
 

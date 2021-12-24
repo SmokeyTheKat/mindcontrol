@@ -64,7 +64,7 @@
 	}
 
 #define THREAD_KILL(_thrd) { \
-	pthread_kill(*(_thrd), 0); \
+	pthread_kill(*(_thrd), 3); \
 }
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \

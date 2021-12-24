@@ -107,6 +107,7 @@ static void interrupt_command(char* data)
 
 void receiver_init(char* ip, int port)
 {
+	printf("connecting to controller on %s:%d\n", ip, port);
 	client = make_dsocket_tcp_client(ip, port);
 	dsocket_tcp_client_connect(&client);
 
@@ -114,7 +115,7 @@ void receiver_init(char* ip, int port)
 	{
 		char buffer[9024] = {0};
 		if (dsocket_tcp_client_receive(client, buffer, sizeof(buffer)) <= 0)
-			exit(0);
+			continue;
 
 		char* data = extract_command(buffer);
 		if (data == 0) continue;

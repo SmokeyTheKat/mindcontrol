@@ -79,6 +79,19 @@ int dsocket_tcp_client_connect(struct dsocket_tcp_client* sck)
 	sck->server.sin_family = AF_INET;
 	sck->server.sin_port = htons(sck->port);
 	sck->server.sin_addr.s_addr = inet_addr(sck->addr);
+
+	struct timeval timeout;      
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 150000;
+	
+	if (setsockopt (sck->dscr, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+				sizeof timeout) < 0)
+		return 1;
+
+	if (setsockopt (sck->dscr, SOL_SOCKET, SO_SNDTIMEO, &timeout,
+				sizeof timeout) < 0)
+		return 1;
+
 	return connect(sck->dscr, (struct sockaddr*)&sck->server, sizeof(sck->server));
 }
 int dsocket_tcp_client_send(struct dsocket_tcp_client sck, const char* data, long length)

@@ -29,6 +29,35 @@ struct vec device_control_get_screen_size(void)
 	return size;
 }
 
+char* device_control_get_hostname(void)
+{
+	static char* hostname_out = 0;
+
+	if (hostname_out != 0) return hostname_out;
+
+	static char hostname_buffer[256];
+
+	gethostname(hostname_buffer, sizeof(hostname_buffer));
+
+	hostname_out = hostname_buffer;
+	return hostname_out;
+}
+
+char* device_control_get_ip(void)
+{
+	static char* ip_out = 0;
+
+	if (ip_out != 0) return ip_out;
+
+	static char ip_buffer[95];
+
+//    load_shell_command("ip a | grep -Eo 'inet (addr:)?([0-9]*\\.){3}[0-9]*' | grep -Eo '([0-9]*\\.){3}[0-9]*' | grep -v '127.0.0.1'",
+//                       ip_buffer, sizeof(ip_out));
+
+	ip_out = ip_buffer;
+	return ip_out;
+}
+
 void device_control_keyboard_disable(void)
 {
 }
