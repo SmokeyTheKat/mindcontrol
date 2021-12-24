@@ -1,6 +1,6 @@
 PREFIX=~/.local
 
-CFLAGS=-I./include/ -Ofast -fno-stack-protector -Werror -Wall -g -pedantic
+CFLAGS=-I./include/ -Ofast -Wno-incompatible-pointer-types -Wno-format-extra-args -fno-stack-protector -Wall -pedantic -g
 CSRCS=$(shell find ./src/ -type f -name "*.c")
 
 LINUX_CC=gcc

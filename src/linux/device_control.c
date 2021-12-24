@@ -2,8 +2,9 @@
 
 #ifdef __unix__
 
-#include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <X11/X.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -14,7 +15,13 @@
 #include <limits.h>
 #include <string.h>
 #include <X11/Xmu/Atoms.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
+#include "mcerror.h"
 #include "utils.h"
 #include "clipboard.h"
 
@@ -60,6 +67,58 @@ void device_control_init(void)
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
 	screen_size = device_control_get_screen_size();
+}
+
+char* device_control_get_hostname(void)
+{
+	static char* hostname_out = 0;
+
+	if (hostname_out != 0) return hostname_out;
+
+	static char hostname_buffer[256];
+
+	gethostname(hostname_buffer, sizeof(hostname_buffer));
+
+	hostname_out = hostname_buffer;
+	return hostname_out;
+}
+
+char* device_control_get_ip(void)
+{
+	static char* ip_out = 0;
+
+	if (ip_out != 0) return ip_out;
+
+	static char ip_buffer[95];
+
+	load_shell_command("ip a | grep -Eo 'inet (addr:)?([0-9]*\\.){3}[0-9]*' | grep -Eo '([0-9]*\\.){3}[0-9]*' | grep -v '127.0.0.1'",
+					   ip_buffer, sizeof(ip_out));
+
+	ip_out = ip_buffer;
+	return ip_out;
+}
+
+char* device_control_get_ip_by_hostname(void)
+{
+	static char* ip_out = 0;
+
+	if (ip_out != 0) return ip_out;
+
+	char hostname_buffer[256];
+
+	int hostname = gethostname(hostname_buffer, sizeof(hostname_buffer));
+	if (hostname == -1)
+		mcerror("could not get hostname\n", 0);
+
+	struct hostent* host_entry = gethostbyname(hostname_buffer);
+	if (host_entry == 0)
+		mcerror("could not get hostname\n", 0);
+
+	char* ip_str = inet_ntoa(*((struct in_addr*)
+						host_entry->h_addr_list[0]));
+
+	ip_out = ip_str;
+	return ip_out;
 }
 
 struct vec device_control_get_screen_size(void)

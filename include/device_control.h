@@ -13,6 +13,10 @@ struct mouse_state;
 struct key_event;
 
 void device_control_init(void);
+
+char* device_control_get_hostname(void);
+char* device_control_get_ip(void);
+
 struct vec device_control_get_screen_size(void);
 
 void device_control_keyboard_disable(void);

@@ -45,8 +45,10 @@ void data_get_string(char** data, char* output)
 void load_shell_command(char* command, char* buffer, int length)
 {
 	FILE* fp = popen(command, "r");
-	fread(buffer, 1, length, fp);
-	int out_length = strlen(buffer);
+	int read_len = 0;
+	int out_length = 0;
+	while ((read_len = fread(&buffer[out_length], 1, length, fp)) > 0)
+		out_length += read_len;
 	if (buffer[out_length-1] == '\n')
 		buffer[out_length-1] = 0;
 	pclose(fp);
