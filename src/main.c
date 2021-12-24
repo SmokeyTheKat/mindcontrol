@@ -7,6 +7,7 @@
 #include "controler.h"
 #include "client.h"
 #include "config.h"
+#include "gui.h"
 
 int main(int argc, char** argv)
 {
@@ -15,5 +16,6 @@ int main(int argc, char** argv)
 	device_control_init();
 	if (user_type == 'c') controler_init(server_port);
 	if (user_type == 'r') receiver_init(server_ip, server_port);
+	gui_main();
 	return 0;
 }

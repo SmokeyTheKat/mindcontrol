@@ -6,12 +6,13 @@
 
 #include "device_control.h"
 #include "commands.h"
-#include "utils.h"
 #include "ddcSocket.h"
 #include "config.h"
 #include "screen.h"
 #include "client.h"
 #include "state.h"
+#include "gui.h"
+#include "utils.h"
 
 #define MAX_VEL ((struct vec){30, 30})
 
@@ -19,36 +20,17 @@
 static void _send_command(char* fmt, ...);
 static void switch_state_to_main(void);
 static void switch_to_client_on_edge(int edge_hit);
-static void handel_local_control(void);
 static void forward_input(void);
 
 static struct dsocket_tcp_server server;
 
-static struct client c_client = (struct client){
-	.active=false,
-	.sck=-1,
-	.ip={"192.168.1.41"},
-	.left=0,
-	.right=0,
-	.up=0,
-	.down=0,
-};
-static struct client server_client = (struct client){
-	.active=true,
-	.sck=-1,
-	.ip={0},
-	.left=0,
-	.right=0,
-	.up=0,
-	.down=0,
-};
-static struct client* active_client = &server_client;
+static struct client* active_client;
 
-static data_state(int x; int y; int edge_from) control_state;
+control_state_t control_state;
 
 struct client* get_client_by_ip(struct client* client, char* ip)
 {
-	if (client == 0) client = &server_client;
+	if (client == 0) client = server_client;
 	if (!strcmp(ip, client->ip)) return client;
 	if (client->right)
 	{
@@ -142,7 +124,7 @@ CREATE_THREAD(controler_receive, void*, _, {
 				x = UNSCALE_X(x);
 				struct client* next_client = client_get_client_in_direction(active_client, screen_direction);
 				if (next_client == 0) continue;
-				else if (next_client == &server_client)
+				else if (next_client == server_client)
 				{
 					control_state.y = y;
 					control_state.x = x;
@@ -206,17 +188,12 @@ static void switch_to_client_on_edge(int edge_hit)
 	device_control_mouse_flush();
 }
 
-static void handel_local_control(void)
+static void test_edge_hit(void)
 {
-	if (control_state.state == CONTROL_STATE_SWITCH_TO_MAIN)
-		switch_state_to_main();
-	else 
-	{
-		struct vec pos = device_control_cursor_get();
-		int edge_hit = get_edge_hit(pos);
-		if (edge_hit != EDGE_NONE)
-			switch_to_client_on_edge(edge_hit);
-	}
+	struct vec pos = device_control_cursor_get();
+	int edge_hit = get_edge_hit(pos);
+	if (edge_hit != EDGE_NONE)
+		switch_to_client_on_edge(edge_hit);
 }
 
 void forward_mouse_input(struct mouse_state mouse_state)
@@ -267,22 +244,34 @@ static void forward_input(void)
 
 void controler_init(int port)
 {
-	server_client.left = &c_client;
-	c_client.right = &server_client;
+	printf("starting controller on port %d...\n", port);
+	active_client = server_client;
 
 	control_state.state = CONTROL_STATE_MAIN;
 	server = make_dsocket_tcp_server(port);
 	dsocket_tcp_server_bind(&server);
 	dsocket_tcp_server_start_listen(&server);
 
-	THREAD_CALL(controler_receive, &active_client->sck);
-	THREAD_CALL(accept_clients, 0);
+	THREAD controler_receive_thread = MAKE_THREAD();
+	THREAD_CALL(&controler_receive_thread, controler_receive, &active_client->sck);
+
+	THREAD accept_clients_thread = MAKE_THREAD();
+	THREAD_CALL(&accept_clients_thread, accept_clients, 0);
 
 	while (1)
 	{
 		SLEEP(REST_TIME);
 		if (control_state.state == CONTROL_STATE_CLIENT)
 			forward_input();
-		else handel_local_control();
+		else if (control_state.state == CONTROL_STATE_SWITCH_TO_MAIN)
+			switch_state_to_main();
+		else if (control_state.state == CONTROL_STATE_MAIN)
+			test_edge_hit();
+		else if (control_state.state == CONTROL_STATE_QUIT)
+		{
+			THREAD_KILL(&controler_receive_thread);
+			THREAD_KILL(&accept_clients_thread);
+			return;
+		}
 	}
 }

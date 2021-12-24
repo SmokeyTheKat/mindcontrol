@@ -10,9 +10,15 @@
 #define SCALE_X(_x) ((_x) * SCREEN_SCALE / screen_size.x)
 #define SCALE_Y(_y) ((_y) * SCREEN_SCALE / screen_size.y)
 
-#define ABS(v) (((v) < 0) ? (-v) : (v))
-#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#ifndef ABS
+	#define ABS(v) (((v) < 0) ? (-v) : (v))
+#endif
+#ifndef MAX
+	#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+#endif
+#ifndef MIN
+	#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 #define NOBJ(t) &(t){0}
 
 #ifdef __WIN64
@@ -21,10 +27,17 @@
 
 #define SLEEP Sleep
 
-#define THREAD_CALL(_func, _arg) { \
-		DWORD _thread; \
-		CreateThread(0, 0, (_func), (_arg), 0, &_thread); \
+#define THREAD DWORD
+
+#define MAKE_THREAD() 0
+
+#define THREAD_CALL(_thrd, _func, _arg) { \
+		CreateThread(0, 0, (_func), (_arg), 0, (_thrd)); \
 	}
+
+#define THREAD_KILL(_thrd) { \
+	ExitThread(*(_thrd)); \
+}
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \
 	DWORD WINAPI _name(LPVOID __varg) \
@@ -38,19 +51,28 @@
 #ifdef __unix__
 
 #include <pthread.h>
+#include <signal.h>
 
 #define SLEEP(_t) usleep((_t)*1000)
 
-#define THREAD_CALL(_func, _arg) { \
-		pthread_t _thread; \
-		pthread_create(&_thread, 0, (_func), (_arg)); \
+#define THREAD pthread_t
+
+#define MAKE_THREAD() 0
+
+#define THREAD_CALL(_thrd, _func, _arg) { \
+		pthread_create((_thrd), 0, (_func), (_arg)); \
 	}
+
+#define THREAD_KILL(_thrd) { \
+	pthread_kill(*(_thrd), 0); \
+}
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \
 	void* _name(void* __varg) \
 	{ \
 		_arg_type _arg_name = *(_arg_type*)__varg; \
 		_code \
+		return 0; \
 	}
 
 #endif
