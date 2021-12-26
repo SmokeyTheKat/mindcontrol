@@ -60,7 +60,7 @@ void device_control_init(void)
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
 	char keyboard_event_path[1024] = {0};
-	load_shell_command("find /dev/input/ | grep 'event-kbd' | tac | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
+	load_shell_command("find /dev/input/ | grep 'event-kbd' | grep -v 'pci' | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
 	keyboard_fd = open(keyboard_event_path, O_RDONLY | O_NONBLOCK);
 
 	flags = fcntl(mouse_fd, F_GETFL, 0);

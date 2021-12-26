@@ -7,6 +7,7 @@
 
 #include "ddcSocket.h"
 #include "config.h"
+#include "mcerror.h"
 
 struct vec screen_size;
 
@@ -49,12 +50,20 @@ char* device_control_get_ip(void)
 
 	if (ip_out != 0) return ip_out;
 
-	static char ip_buffer[95];
+	char hostname_buffer[256];
 
-//    load_shell_command("ip a | grep -Eo 'inet (addr:)?([0-9]*\\.){3}[0-9]*' | grep -Eo '([0-9]*\\.){3}[0-9]*' | grep -v '127.0.0.1'",
-//                       ip_buffer, sizeof(ip_out));
+	int hostname = gethostname(hostname_buffer, sizeof(hostname_buffer));
+	if (hostname == -1)
+		mcerror("could not get hostname\n", 0);
 
-	ip_out = ip_buffer;
+	struct hostent* host_entry = gethostbyname(hostname_buffer);
+	if (host_entry == 0)
+		mcerror("could not get hostname\n", 0);
+
+	char* ip_str = inet_ntoa(*((struct in_addr*)
+						host_entry->h_addr_list[0]));
+
+	ip_out = ip_str;
 	return ip_out;
 }
 
