@@ -1,6 +1,24 @@
 #ifndef __MINDCONTROL_COMMANDS_H__
 #define __MINDCONTROL_COMMANDS_H__
 
+#include <stdint.h>
+
+struct command
+{
+	int type;
+};
+
+struct command_cursor_move_to
+{
+	struct command;
+	uint32_t x, y;
+};
+
+struct command_cursor_move
+{
+	uint32_t x, y;
+};
+
 #define COMMAND(com) (*(uint32_t*)com)
 
 #define COMMAND_CURSOR_UPDATE "CURS"
@@ -27,5 +45,7 @@
 #define COMMAND_VALUE_KEYRELEASE 0x534c524b
 #define COMMAND_UPDATE_CLIPBOARD "UCLP"
 #define COMMAND_VALUE_UPDATE_CLIPBOARD 0x504c4355
+#define COMMAND_GO_BY_EDGE_AT "GBEA"
+#define COMMAND_VALUE_GO_BY_EDGE_AT 0x41454247
 
 #endif

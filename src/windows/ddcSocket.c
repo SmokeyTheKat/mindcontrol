@@ -92,6 +92,9 @@ int dsocket_tcp_client_connect(struct dsocket_tcp_client* sck)
 				sizeof timeout) < 0)
 		return 1;
 
+	if (setsockopt(sck->dscr, IPPROTO_TCP, TCP_NODELAY, (char*)&(BOOL){1}, sizeof(BOOL)))
+		return 1;
+
 	return connect(sck->dscr, (struct sockaddr*)&sck->server, sizeof(sck->server));
 }
 int dsocket_tcp_client_send(struct dsocket_tcp_client sck, const char* data, long length)

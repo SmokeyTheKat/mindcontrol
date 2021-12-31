@@ -2,6 +2,7 @@
 #define __MINDCONTROL_SCREEN_H__
 
 #include "vec.h"
+#include "client.h"
 
 #define EDGE_NONE 0
 #define EDGE_RIGHT 1
@@ -14,6 +15,10 @@ int get_scaled_x_by_edge(int edge);
 int get_scaled_y_by_edge(int edge);
 struct vec get_vec_close_to_edge(struct vec pos, int edge);
 struct vec get_scaled_vec_close_to_edge(struct vec pos, int edge);
+int get_scaled_pos_on_edge(int edge, struct vec pos);
+struct vec get_vec_at_edge_pos(int edge, int edge_pos);
+struct vec get_unscaled_vec_at_edge_pos(int edge, int edge_pos);
+bool edge_hit_is_dead_corner(struct vec pos, struct dead_corners dc);
 int other_edge(int edge);
 
 

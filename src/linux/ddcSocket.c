@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <netinet/tcp.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 void dsocket_init(void) {}
 
@@ -85,7 +87,7 @@ int dsocket_tcp_server_bind(struct dsocket_tcp_server* sck)
 {
 	if ((sck->dscr = socket(AF_INET, SOCK_STREAM, 0)) == 0)
 		return 1;
-	if (setsockopt(sck->dscr, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &(sck->opt), sizeof(sck->opt)))
+	if (setsockopt(sck->dscr, SOL_SOCKET, SO_REUSEADDR, &(sck->opt), sizeof(sck->opt)))
 		return 1;
 	sck->server.sin_family = AF_INET;
 	sck->server.sin_addr.s_addr = INADDR_ANY;

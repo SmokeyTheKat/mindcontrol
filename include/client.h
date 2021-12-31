@@ -31,7 +31,8 @@
 
 struct client;
 
-void receiver_init(char* ip, int port);
+void receiver_main(char* ip, int port);
+void receiver_cleanup(void);
 
 struct client* client_find_by_pos(struct client* client, int x, int y);
 struct client* client_find_by_ip(struct client* client, char* ip);
@@ -43,6 +44,19 @@ struct client
 	char ip[16];
 	struct vec pos;
 	int sck;
+
+	float mouse_speed;
+	int scroll_speed;
+
+	struct dead_corners
+	{
+		int top_left;
+		int top_right;
+		int bottom_left;
+		int bottom_right;
+		int size;
+	} dead_corners;
+
 	union
 	{
 		struct

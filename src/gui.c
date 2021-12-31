@@ -2,7 +2,7 @@
 #include <glib.h>
 
 #include "client.h"
-#include "controler.h"
+#include "controller.h"
 #include "device_control.h"
 #include "vec.h"
 #include "list.h"
@@ -10,8 +10,8 @@
 #include "utils.h"
 #include "ddcSocket.h"
 
+#define LAST_WAS_SERVER 0
 #define LAST_WAS_CLIENT 1
-#define LAST_WAS_SERVER 2
 
 static void create_screen(GtkWidget* widget, struct vec* pos);
 
@@ -48,6 +48,7 @@ static GtkWidget* edit_client_textbox;
 static GtkWidget* entry_server_ip;
 static GtkWidget* client_scan_dialog;
 static GtkWidget* server_scan_dialog;
+static GtkWidget* notebook_tabs;
 
 static GtkPaned* gtk_labeled_new_with_widget(char* label, GtkWidget* widget)
 {
@@ -176,17 +177,33 @@ static void screen_assign_neighbors(struct gclient* screen)
 	}
 }
 
-struct set_client_ip
+struct edit_client_data
 {
 	struct gclient* screen;
-	GtkWidget* textbox;
+	GtkWidget* combo_box_text_ip;
+	GtkWidget* check_button_dc_top_left;
+	GtkWidget* check_button_dc_top_right;
+	GtkWidget* check_button_dc_bottom_left;
+	GtkWidget* check_button_dc_bottom_right;
+	GtkWidget* spin_button_dc_size;
+	GtkWidget* spin_button_mouse_speed;
+	GtkWidget* spin_button_scroll_speed;
 };
 
-static void edit_client_set_screen_data(GtkWidget* widget, gint response, struct set_client_ip* data)
+static void edit_client_set_screen_data(GtkWidget* widget, gint response, struct edit_client_data* data)
 {
-	GtkEntry* entry = data->textbox;
-	const char* textbox_data = gtk_combo_box_text_get_active_text(entry);
-	strcpy(data->screen->client.ip, textbox_data);
+	const char* ip = gtk_combo_box_text_get_active_text(data->combo_box_text_ip);
+	strcpy(data->screen->client.ip, ip);
+
+	data->screen->client.dead_corners.top_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_left));
+	data->screen->client.dead_corners.top_right = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_right));
+	data->screen->client.dead_corners.bottom_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_bottom_left));
+	data->screen->client.dead_corners.bottom_right = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_bottom_right));
+	data->screen->client.dead_corners.size = gtk_spin_button_get_value(GTK_SPIN_BUTTON(data->spin_button_dc_size));
+
+	data->screen->client.mouse_speed = gtk_spin_button_get_value(GTK_SPIN_BUTTON(data->spin_button_mouse_speed));
+	data->screen->client.scroll_speed = gtk_spin_button_get_value(GTK_SPIN_BUTTON(data->spin_button_scroll_speed));
+
 	gtk_widget_destroy(widget);
 	free(data);
 }
@@ -201,43 +218,182 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 										  NULL);
 
 	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	GtkWidget* grid = gtk_grid_new();
-	gtk_container_add(GTK_CONTAINER(content_area), grid);
 
-
-	GtkWidget* label = gtk_label_new("ip: ");
-	gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
+	GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_container_add(GTK_CONTAINER(content_area), box);
 
 	edit_client_textbox = gtk_combo_box_text_new_with_entry();
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(edit_client_textbox), screen->client.ip);
 	gtk_combo_box_set_active(GTK_COMBO_BOX_TEXT(edit_client_textbox), 0);
-
 	for (list_iterate(&clients, i, struct client_info))
-	{
-		printf("client: %s\n", i->ip);
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(edit_client_textbox), i->ip);
-	}
+
+	GtkWidget* labeled_client_ip = gtk_labeled_new_with_widget("ip: ", edit_client_textbox);
+
+	GtkWidget* spin_button_mouse_speed = gtk_spin_button_new_with_range(0, 10, 0.25);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_mouse_speed), 2);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_mouse_speed), screen->client.mouse_speed);
+
+	GtkWidget* spin_button_scroll_speed = gtk_spin_button_new_with_range(0, 100, 1);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_scroll_speed), 0);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_scroll_speed), screen->client.scroll_speed);
+
+	GtkWidget* labeled_mouse_speed = gtk_labeled_new_with_widget("Mouse speed: ", spin_button_mouse_speed);
+	GtkWidget* labeled_scroll_speed = gtk_labeled_new_with_widget("Scroll speed: ", spin_button_scroll_speed);
+
+	GtkWidget* check_button_dc_top_left = gtk_check_button_new_with_label("top left");
+	GtkWidget* check_button_dc_top_right = gtk_check_button_new_with_label("top right");
+	GtkWidget* check_button_dc_bottom_left = gtk_check_button_new_with_label("bottom left");
+	GtkWidget* check_button_dc_bottom_right = gtk_check_button_new_with_label("bottom right");
+
+	gtk_toggle_button_set_active(check_button_dc_top_left, screen->client.dead_corners.top_left);
+	gtk_toggle_button_set_active(check_button_dc_top_right, screen->client.dead_corners.top_right);
+	gtk_toggle_button_set_active(check_button_dc_bottom_left, screen->client.dead_corners.bottom_left);
+	gtk_toggle_button_set_active(check_button_dc_bottom_right, screen->client.dead_corners.bottom_right);
+
+	GtkWidget* spin_button_dc_size = gtk_spin_button_new_with_range(0, 1024, 1);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_dc_size), 0);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_dc_size), screen->client.dead_corners.size);
+
+	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("corner size: ", spin_button_dc_size);
+
+	GtkWidget* grid_dead_corners = gtk_grid_new();
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), gtk_label_new_with_mnemonic("dead corners:"), 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_left, 0, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_right, 1, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_bottom_left, 0, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_bottom_right, 1, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), labeled_dc_size, 0, 3, 2, 1);
+
+
+	GtkWidget* button_remove = gtk_button_new_with_label("remove");
 	
-	gtk_grid_attach(GTK_GRID(grid), edit_client_textbox, 1, 0, 1, 1);
-
-
-	GtkWidget* button = gtk_button_new_with_label("remove");
-	gtk_grid_attach(GTK_GRID(grid), button, 0, 1, 2, 1);
+	gtk_box_pack_start(GTK_BOX(box), labeled_client_ip, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(box), labeled_mouse_speed, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(box), labeled_scroll_speed, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(box), grid_dead_corners, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(box), button_remove, false, false, 0);
 
 
 	gtk_widget_show_all(dialog);
 
-	struct set_client_ip* sci = malloc(sizeof(struct set_client_ip));
-	sci->screen = screen;
-	sci->textbox = edit_client_textbox;
+	struct edit_client_data* client_data = malloc(sizeof(struct edit_client_data));
+	client_data->screen = screen;
+	client_data->combo_box_text_ip = edit_client_textbox;
+	client_data->check_button_dc_top_left = check_button_dc_top_left;
+	client_data->check_button_dc_top_right = check_button_dc_top_right;
+	client_data->check_button_dc_bottom_left = check_button_dc_bottom_left;
+	client_data->check_button_dc_bottom_right = check_button_dc_bottom_right;
+	client_data->spin_button_dc_size = spin_button_dc_size;
+	client_data->spin_button_mouse_speed = spin_button_mouse_speed;
+	client_data->spin_button_scroll_speed = spin_button_scroll_speed;
 
-	g_signal_connect(GTK_DIALOG(dialog), "response", G_CALLBACK(edit_client_set_screen_data), sci);
+	g_signal_connect(GTK_DIALOG(dialog), "response", G_CALLBACK(edit_client_set_screen_data), client_data);
+}
+
+struct edit_master_data
+{
+	struct gclient* screen;
+	GtkWidget* combo_box_text_ip;
+	GtkWidget* check_button_dc_top_left;
+	GtkWidget* check_button_dc_top_right;
+	GtkWidget* check_button_dc_bottom_left;
+	GtkWidget* check_button_dc_bottom_right;
+	GtkWidget* spin_button_dc_size;
+};
+
+static void edit_master_set_screen_data(GtkWidget* widget, gint response, struct edit_master_data* data)
+{
+	data->screen->client.dead_corners.top_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_left));
+	data->screen->client.dead_corners.top_right = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_right));
+	data->screen->client.dead_corners.bottom_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_bottom_left));
+	data->screen->client.dead_corners.bottom_right = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_bottom_right));
+	data->screen->client.dead_corners.size = gtk_spin_button_get_value(GTK_SPIN_BUTTON(data->spin_button_dc_size));
+
+	gtk_widget_destroy(widget);
+	free(data);
+}
+
+static void edit_master(GtkWidget* widget, struct gclient* screen)
+{
+	GtkWidget* dialog = gtk_dialog_new_with_buttons("Get Text",
+										  GTK_WINDOW(window),
+										  GTK_DIALOG_MODAL,
+										  GTK_STOCK_OK,
+										  GTK_RESPONSE_OK,
+										  NULL);
+
+	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	GtkWidget* grid = gtk_grid_new();
+	gtk_container_add(GTK_CONTAINER(content_area), grid);
+
+	GtkWidget* check_button_dc_top_left = gtk_check_button_new_with_label("top left");
+	GtkWidget* check_button_dc_top_right = gtk_check_button_new_with_label("top right");
+	GtkWidget* check_button_dc_bottom_left = gtk_check_button_new_with_label("bottom left");
+	GtkWidget* check_button_dc_bottom_right = gtk_check_button_new_with_label("bottom right");
+
+	gtk_toggle_button_set_active(check_button_dc_top_left, screen->client.dead_corners.top_left);
+	gtk_toggle_button_set_active(check_button_dc_top_right, screen->client.dead_corners.top_right);
+	gtk_toggle_button_set_active(check_button_dc_bottom_left, screen->client.dead_corners.bottom_left);
+	gtk_toggle_button_set_active(check_button_dc_bottom_right, screen->client.dead_corners.bottom_right);
+
+	GtkWidget* spin_button_dc_size = gtk_spin_button_new_with_range(0, 1024, 1);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_dc_size), 0);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_dc_size), screen->client.dead_corners.size);
+
+	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("corner size: ", spin_button_dc_size);
+
+	GtkWidget* grid_dead_corners = gtk_grid_new();
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), gtk_label_new_with_mnemonic("dead corners:"), 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_left, 0, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_right, 1, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_bottom_left, 0, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_bottom_right, 1, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), labeled_dc_size, 0, 3, 2, 1);
+
+
+	GtkWidget* button_remove = gtk_button_new_with_label("remove");
+
+	GtkWidget* check_button_shared_clipboard = gtk_check_button_new_with_label("Enable shared clipboard");
+	GtkWidget* check_button_dragdrop = gtk_check_button_new_with_label("Enable drag and drop file transfer");
+
+	GtkWidget* check_button_delayed_switch = gtk_check_button_new_with_label("Switch hold time");
+	GtkWidget* spin_button_delayed_switch = gtk_spin_button_new_with_range(0, 5000, 50);
+	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_delayed_switch), 0);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_delayed_switch), 250);
+
+	GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_box_pack_start(GTK_BOX(box), check_button_delayed_switch, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(box), spin_button_delayed_switch, true, true, 0);
+
+	
+	gtk_grid_attach(GTK_GRID(grid), check_button_shared_clipboard, 0, 0, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), check_button_dragdrop, 0, 1, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), box, 0, 2, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), grid_dead_corners, 0, 4, 2, 1);
+	gtk_grid_attach(GTK_GRID(grid), button_remove, 0, 5, 2, 1);
+
+
+	gtk_widget_show_all(dialog);
+
+	struct edit_master_data* master_data = malloc(sizeof(struct edit_master_data));
+	master_data->screen = screen;
+	master_data->check_button_dc_top_left = check_button_dc_top_left;
+	master_data->check_button_dc_top_right = check_button_dc_top_right;
+	master_data->check_button_dc_bottom_left = check_button_dc_bottom_left;
+	master_data->check_button_dc_bottom_right = check_button_dc_bottom_right;
+	master_data->spin_button_dc_size = spin_button_dc_size;
+
+	g_signal_connect(GTK_DIALOG(dialog), "response", G_CALLBACK(edit_master_set_screen_data), master_data);
 }
 
 static void create_screen(GtkWidget* widget, struct vec* pos)
 {
 	struct gclient* new_screen = calloc(sizeof(struct gclient), 1);
 	new_screen->client.pos = *pos;
+	new_screen->client.mouse_speed = 1;
+	new_screen->client.scroll_speed = 1;
+	new_screen->client.dead_corners.size = 4;
 	new_screen->button = gtk_button_new_with_image_from_file("./monitor.png", 80, 80);
 
 	g_signal_connect(new_screen->button, "clicked", G_CALLBACK(edit_client), new_screen);
@@ -288,11 +444,11 @@ struct client_options
 };
 
 CREATE_THREAD(run_controller, int, port, {
-	controler_init(port);
+	controller_main(port);
 })
 
 CREATE_THREAD(run_client, struct client_options, options, {
-	receiver_init(options.ip, options.port);
+	receiver_main(options.ip, options.port);
 })
 
 static void toggle_controller(GtkWidget* widget, struct menu_options* menu_options)
@@ -313,7 +469,7 @@ static void toggle_controller(GtkWidget* widget, struct menu_options* menu_optio
 	{
 		gtk_button_set_label(menu_options->button_start, "start");
 
-		control_state.state = CONTROL_STATE_QUIT;
+		controller_set_state(CONTROL_STATE_QUIT);
 		for (int i = 0; i < 100; i++)
 			SLEEP(REST_TIME);
 		THREAD_KILL(&instance_thread);
@@ -339,10 +495,11 @@ static void toggle_client(GtkWidget* widget, struct client_menu_options* menu_op
 	{
 		gtk_button_set_label(menu_options->button_start, "start");
 
-		control_state.state = CONTROL_STATE_QUIT;
+		controller_set_state(CONTROL_STATE_QUIT);
 		for (int i = 0; i < 100; i++)
 			SLEEP(REST_TIME);
 		THREAD_KILL(&instance_thread);
+		receiver_cleanup();
 	}
 }
 
@@ -355,19 +512,17 @@ bool server_scan_end(void* _)
 bool server_scan(void* _)
 {
 	(void)_;
-	char ip[16];
-	strcpy(ip, device_control_get_ip());
+	if (clients.data == 0)
+		clients = make_list(4, struct client_info);
+
+	char base_ip[16];
+	strcpy(base_ip, device_control_get_ip());
+	strrchr(base_ip, '.')[1] = 0;
+
 	for (int i = 0; i < 255; i++)
 	{
-		int j;
-		int dc;
-		for (j = 0, dc = 0; j < 16 && dc < 3; j++)
-			if (ip[j] == '.') dc++;
-		ip[j] = 0;
-
-		char numstr[6];
-		sprintf(numstr, "%d", i);
-		strcat(ip, numstr);
+		char ip[16] = {0};
+		sprintf(ip, "%s%d", base_ip, i);
 
 		printf("trying %s:%d\n", ip, 6969);
 
@@ -377,18 +532,19 @@ bool server_scan(void* _)
 			close(cli.dscr);
 			continue;
 		}
-		if (clients.data == 0)
-		{
-			clients = make_list(4, struct client_info);
-		}
-		char* ip = inet_ntoa(cli.server.sin_addr);
+
 		struct client_info client_info;
 		strcpy(client_info.ip, ip);
+
 		list_push_back(&clients, client_info, struct client_info);
+
 		printf("found %s!\n", ip);
+
 		close(cli.dscr);
 	}
+
 	g_idle_add(server_scan_end, 0);
+	return 0;
 }
 
 static void display_server_scan(GtkWidget* widget, struct gclient* _)
@@ -422,14 +578,19 @@ static void save_config(GtkWidget* widget, struct menu_options* menu_options)
 {
 	const struct vec master_pos = {100, 100};
 	FILE* fp = fopen("./mindcontrol.conf", "w");
-	printf("omgh i\n");
 	int port = atoi(gtk_entry_get_text(menu_options->entry_port));
 	fprintf(fp, "port %d\n", port);
 	fprintf(fp, "ip %s\n", gtk_entry_get_text(entry_server_ip));
 	fprintf(fp, "last %d\n", menu_options->last);
 	ITERATE_OVER_CLIENTS({
 		if (!vec_compare(current->pos, master_pos))
-			fprintf(fp, "display %d %d %s\n", current->pos.x, current->pos.y, current->ip);
+			fprintf(fp, "display %d %d %s %d %d %d %d %d %f %d\n",
+					current->pos.x, current->pos.y, current->ip,
+					current->dead_corners.top_left, current->dead_corners.top_right,
+					current->dead_corners.bottom_left, current->dead_corners.bottom_right,
+					current->dead_corners.size,
+					current->mouse_speed,
+					current->scroll_speed);
 	});
 	fclose(fp);
 }
@@ -444,9 +605,11 @@ static void load_config(void)
 	int last;
 	while (fgets(buffer, sizeof(buffer), fp))
 	{
-		printf("[%s]\n", buffer);
 		int x, y;
+		struct dead_corners dc;
 		char ip[16];
+		float mouse_speed;
+		int scroll_speed;
 		if (!strncmp(buffer, "port", 4))
 			sscanf(buffer, "port %d", &port);
 		else if (!strncmp(buffer, "ip", 2))
@@ -455,16 +618,21 @@ static void load_config(void)
 			sscanf(buffer, "last %d", &last);
 		else if (!strncmp(buffer, "display", 7))
 		{
-			sscanf(buffer, "display %d %d %s", &x, &y, ip);
-			printf("%d %d %s\n", x, y, ip);
+			sscanf(buffer, "display %d %d %s %d %d %d %d %d %f %d", &x, &y, ip,
+														   &dc.top_left, &dc.top_right,
+														   &dc.bottom_left, &dc.bottom_right,
+														   &dc.size, &mouse_speed, &scroll_speed);
 			struct vec pos = {x, y};
 			create_screen(gtk_grid_get_child_at(GTK_GRID(client_grid), x, y), &pos);
 			struct client* client = client_find_by_pos(server_client, x, y);
 			strcpy(client->ip, ip);
+			client->dead_corners = dc;
+			client->mouse_speed = mouse_speed;
+			client->scroll_speed = scroll_speed;
 		}
 	}
 	gtk_entry_buffer_set_text(gtk_entry_get_buffer(entry_server_ip), controller_ip, strlen(controller_ip));
-	printf("port: %d\n", port);
+	gtk_notebook_set_current_page(notebook_tabs, last);
 }
 
 static GtkWidget* generate_server_menu_controls(void)
@@ -588,9 +756,6 @@ static GtkWidget* generate_client_menu_controls(void)
 	gtk_entry_set_text(GTK_ENTRY(entry_server_port), "1234");
 	GtkWidget* labeled_entry_server_port = gtk_labeled_new_with_widget("Controller port:", entry_server_port);
 
-	GtkWidget* scan_start = gtk_button_new_with_label("pair");
-	g_signal_connect(scan_start, "clicked", G_CALLBACK(display_client_scan), 0);
-
 	GtkWidget* button_start = gtk_button_new_with_label("start");
 	static struct client_menu_options menu_options;
 	menu_options.last = LAST_WAS_CLIENT;
@@ -606,7 +771,6 @@ static GtkWidget* generate_client_menu_controls(void)
 	gtk_box_pack_start(GTK_BOX(menu), labeled_label_my_hostname, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), labeled_entry_server_ip, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), labeled_entry_server_port, false, false, 0);
-	gtk_box_pack_start(GTK_BOX(menu), scan_start, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), button_save_config, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), button_start, false, false, 0);
 
@@ -628,8 +792,9 @@ static void activate(GtkApplication *app, gpointer user_data)
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
 	root.button = gtk_button_new_with_image_from_file("./controller.png", 80, 80);
+	g_signal_connect(root.button, "clicked", G_CALLBACK(edit_master), &root);
 
-	GtkWidget* notebook_tabs = gtk_notebook_new();
+	notebook_tabs = gtk_notebook_new();
 
 	GtkWidget* server_page = generate_server_page();
 	GtkWidget* client_page = generate_client_page();

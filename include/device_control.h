@@ -19,8 +19,9 @@ char* device_control_get_ip(void);
 
 struct vec device_control_get_screen_size(void);
 
-void device_control_keyboard_disable(void);
-void device_control_keyboard_enable(void);
+void device_control_disable_input(void);
+void device_control_enable_input(void);
+
 void device_control_keyboard_send(int keycode);
 void device_control_keyboard_send_press(int keycode);
 void device_control_keyboard_send_release(int keycode);
@@ -32,6 +33,9 @@ void device_control_cursor_left_up(void);
 void device_control_cursor_right_up(void);
 void device_control_cursor_right_down(void);
 void device_control_cursor_scroll(int dir);
+void device_control_show_cursor(void);
+void device_control_hide_cursor(void);
+bool device_control_is_cursor_hidden(void);
 struct vec device_control_cursor_get(void);
 struct vec device_control_cursor_on_move_get(void);
 struct vec device_control_cursor_on_move_get_relative(void);

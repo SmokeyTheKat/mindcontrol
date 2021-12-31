@@ -21,6 +21,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <X11/Intrinsic.h>
+#include <X11/extensions/sync.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/XInput.h>
+#include <X11/extensions/XInput2.h>
+
 #include "mcerror.h"
 #include "utils.h"
 #include "clipboard.h"
@@ -60,8 +66,8 @@ void device_control_init(void)
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
 	char keyboard_event_path[1024] = {0};
-	load_shell_command("find /dev/input/ | grep 'event-kbd' | grep -v 'pci' | head -n1", keyboard_event_path, sizeof(keyboard_event_path));
-	keyboard_fd = open(keyboard_event_path, O_RDONLY | O_NONBLOCK);
+//    load_shell_command("/dev/input/event", keyboard_event_path, sizeof(keyboard_event_path));
+	keyboard_fd = open("/dev/input/event2", O_RDONLY | O_NONBLOCK);
 
 	flags = fcntl(mouse_fd, F_GETFL, 0);
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
@@ -83,22 +89,23 @@ char* device_control_get_hostname(void)
 	return hostname_out;
 }
 
+//char* device_control_get_ip(void)
+//{
+//    static char* ip_out = 0;
+//
+//    if (ip_out != 0) return ip_out;
+//
+//    static char ip_buffer[95];
+//
+//    load_shell_command("ip a | grep -Eo 'inet (addr:)?([0-9]*\\.){3}[0-9]*' | grep -Eo '([0-9]*\\.){3}[0-9]*' | grep -v '127.0.0.1'",
+//                       ip_buffer, sizeof(ip_out));
+//
+//    ip_out = ip_buffer;
+//    return ip_out;
+//}
+
+//char* device_control_get_ip_by_hostname(void)
 char* device_control_get_ip(void)
-{
-	static char* ip_out = 0;
-
-	if (ip_out != 0) return ip_out;
-
-	static char ip_buffer[95];
-
-	load_shell_command("ip a | grep -Eo 'inet (addr:)?([0-9]*\\.){3}[0-9]*' | grep -Eo '([0-9]*\\.){3}[0-9]*' | grep -v '127.0.0.1'",
-					   ip_buffer, sizeof(ip_out));
-
-	ip_out = ip_buffer;
-	return ip_out;
-}
-
-char* device_control_get_ip_by_hostname(void)
 {
 	static char* ip_out = 0;
 
@@ -130,18 +137,20 @@ struct vec device_control_get_screen_size(void)
 	return size;
 }
 
-void device_control_keyboard_disable(void)
+void device_control_disable_input(void)
 {
 	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {} && \
 					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {}", "r");
 	pclose(fp);
+	device_control_hide_cursor();
 }
 
-void device_control_keyboard_enable(void)
+void device_control_enable_input(void)
 {
 	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {} && \
 					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {}", "r");
 	pclose(fp);
+	device_control_show_cursor();
 }
 
 void device_control_cursor_move(int x, int y)
@@ -210,7 +219,7 @@ void device_control_cursor_scroll(int dir)
 	{
 		XTestFakeButtonEvent(display, Button5, true, 0);
 		XFlush(display);
-		usleep(10000);
+		usleep(1000);
 		XTestFakeButtonEvent(display, Button5, false, 0);
 		XFlush(display);
 	}
@@ -218,7 +227,7 @@ void device_control_cursor_scroll(int dir)
 	{
 		XTestFakeButtonEvent(display, Button4, true, 0);
 		XFlush(display);
-		usleep(10000);
+		usleep(1000);
 		XTestFakeButtonEvent(display, Button4, false, 0);
 		XFlush(display);
 	}
@@ -310,6 +319,40 @@ char* device_control_clipboard_get(void)
 void device_control_clipboard_set(char* data)
 {
 	clipboard_set(data);
+}
+
+enum move_types {
+	MOVE_NW = 1,
+	MOVE_NE,
+	MOVE_SW,
+	MOVE_SE,
+	MOVE_WIN_NW,
+	MOVE_WIN_NE,
+	MOVE_WIN_SW,
+	MOVE_WIN_SE,
+};
+
+static int cursor_is_hiding = 0;
+
+bool device_control_is_cursor_hidden(void)
+{
+	return cursor_is_hiding;
+}
+
+void device_control_hide_cursor(void)
+{
+	if (cursor_is_hiding) return;
+	XFixesHideCursor(display, root_window);
+	XFlush(display);
+	cursor_is_hiding = 1;
+}
+
+void device_control_show_cursor(void)
+{
+	if (!cursor_is_hiding) return;
+	XFixesShowCursor(display, root_window);
+	XFlush(display);
+	cursor_is_hiding = 0;
 }
 
 uint16_t key_code_to_generic_code(uint16_t _c)

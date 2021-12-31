@@ -4,12 +4,22 @@
 
 #include <windows.h>
 #include <winuser.h>
+#include <pthread.h>
 
 #include "ddcSocket.h"
 #include "config.h"
 #include "mcerror.h"
 
 struct vec screen_size;
+
+struct DROPFILE
+{
+	DWORD pFiles;
+	POINT pt;
+	BOOL fNC;
+	BOOL fWide;
+	char filedata[];
+};
 
 void device_control_init(void)
 {
@@ -67,23 +77,25 @@ char* device_control_get_ip(void)
 	return ip_out;
 }
 
-void device_control_keyboard_disable(void)
+void device_control_disable_input(void)
 {
 }
 
-void device_control_keyboard_enable(void)
+void device_control_enable_input(void)
 {
 }
 
 void device_control_cursor_move(int x, int y)
 {
-	INPUT ip = {0};
-	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
-	ip.mi.dx = x;
-	ip.mi.dy = y;
-	ip.mi.dwFlags = MOUSEEVENTF_MOVE;
-	SendInput(1, &ip, sizeof(ip));
+//    INPUT ip = {0};
+//    ip.type = INPUT_MOUSE;
+//    ip.mi.mouseData = 0;
+//    ip.mi.dx = x;
+//    ip.mi.dy = y;
+//    ip.mi.dwFlags = MOUSEEVENTF_MOVE;
+//    SendInput(1, &ip, sizeof(ip));
+	struct vec pos = device_control_cursor_get();
+	SetCursorPos(pos.x + x, pos.y + y);
 }
 
 void device_control_cursor_move_to(int x, int y)
@@ -169,7 +181,7 @@ void device_control_cursor_scroll(int dir)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = -dir * scroll_speed;
+	ip.mi.mouseData = -dir;
 	ip.mi.dwFlags = MOUSEEVENTF_WHEEL;
 	SendInput(1, &ip, sizeof(ip));
 }

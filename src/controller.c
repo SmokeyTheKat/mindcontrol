@@ -1,4 +1,4 @@
-#include "controler.h"
+#include "controller.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -26,7 +26,7 @@ static struct dsocket_tcp_server server;
 
 static struct client* active_client;
 
-control_state_t control_state;
+static data_state(int x; int y; int edge_from) control_state;
 
 struct client* get_client(void)
 {
@@ -35,11 +35,8 @@ struct client* get_client(void)
 	printf("%s\n", ip);
 	
 	struct client* client = client_find_by_ip(server_client, ip);
-//    while ((client = client_find_by_ip(server_client, ip)))
-//    {
-		client->active = true;
-		client->sck = sck;
-//    }
+	client->active = true;
+	client->sck = sck;
 	return client;
 }
 
@@ -55,6 +52,11 @@ static void _send_command(char* fmt, ...)
 	va_end(args);
 
 	if (active_client->sck != -1) dsocket_tcp_server_send(server, active_client->sck, buffer, strlen(buffer));
+}
+
+void controller_set_state(state_t state)
+{
+	control_state.state = state;
 }
 
 struct client* client_get_client_in_direction(struct client* client, int direction)
@@ -77,7 +79,7 @@ struct client* client_get_client_in_direction(struct client* client, int directi
 	return 0;
 }
 
-CREATE_THREAD(controler_receive, void*, _, {
+CREATE_THREAD(controller_receive, void*, _, {
 	(void)_;
 	while (1)
 	{
@@ -86,8 +88,20 @@ CREATE_THREAD(controler_receive, void*, _, {
 			SLEEP(REST_TIME);
 			continue;
 		}
+
 		char buffer[4096] = {0};
-		dsocket_tcp_server_receive(server, active_client->sck, buffer, sizeof(buffer));
+
+		int bytes_read = dsocket_tcp_server_receive(server, active_client->sck, buffer, sizeof(buffer));
+		if (bytes_read == 0)
+		{
+			active_client->sck = -1;
+			active_client->active = false;
+			control_state.state = CONTROL_STATE_SWITCH_TO_MAIN;
+			active_client = server_client;
+			continue;
+		}
+		else if (bytes_read < 0) continue;
+
 		char* data = extract_command(buffer);
 		do
 		{
@@ -101,6 +115,8 @@ CREATE_THREAD(controler_receive, void*, _, {
 				x = UNSCALE_X(x);
 				struct client* next_client = client_get_client_in_direction(active_client, screen_direction);
 				if (next_client == 0) continue;
+				else if (edge_hit_is_dead_corner((struct vec){x, y}, active_client->dead_corners))
+					continue;
 				else if (next_client == server_client)
 				{
 					control_state.y = y;
@@ -133,7 +149,7 @@ CREATE_THREAD(accept_clients, void*, _, {
 
 static void switch_state_to_main(void)
 {
-	device_control_keyboard_enable();
+	device_control_enable_input();
 	struct vec edge_pos = get_vec_close_to_edge((struct vec){control_state.x, control_state.y}, other_edge(control_state.edge_from));
 	device_control_cursor_move_to(edge_pos.x, edge_pos.y);
 	control_state.state = CONTROL_STATE_MAIN;
@@ -144,19 +160,18 @@ static void switch_to_client_on_edge(int edge_hit)
 	struct vec pos = device_control_cursor_get();
 
 	struct client* next_client = client_get_client_in_direction(active_client, edge_hit);
-	if (next_client == 0 || next_client->active == false) return;
+	if (next_client == 0 || next_client->active == false)
+		return;
+	if (edge_hit_is_dead_corner(pos, active_client->dead_corners))
+		return;
 	active_client = next_client;
 
-	device_control_cursor_move_to(screen_size.x / 2, screen_size.y / 2);
+	send_command(COMMAND_GO_BY_EDGE_AT, "%d %d", other_edge(edge_hit), get_scaled_pos_on_edge(edge_hit, pos));
 
-	struct vec edge_pos = get_scaled_vec_close_to_edge(pos, other_edge(edge_hit));
-	send_command(COMMAND_CURSOR_TO, "%d %d", edge_pos.x, edge_pos.y);
-
-	send_command(COMMAND_UPDATE_CLIPBOARD, "%s\x01", device_control_clipboard_get());
+//    send_command(COMMAND_UPDATE_CLIPBOARD, "%s\x01", device_control_clipboard_get());
 
 	control_state.state = CONTROL_STATE_CLIENT;
-	device_control_keyboard_disable();
-	device_control_get_mouse_state();
+	device_control_disable_input();
 
 	device_control_keyboard_flush();
 	device_control_mouse_flush();
@@ -175,12 +190,12 @@ void forward_mouse_input(struct mouse_state mouse_state)
 	static bool old_mouse_left = false;
 	static bool old_mouse_right = false;
 
-	device_control_cursor_move_to(screen_size.x / 2, screen_size.y / 2);
-
 	struct vec vel = {mouse_state.x, mouse_state.y};
-	send_command(COMMAND_CURSOR_UPDATE, "%d %d", vel.x, vel.y);
+	send_command(COMMAND_CURSOR_UPDATE, "%d %d",
+				(int)((float)vel.x * active_client->mouse_speed),
+				(int)((float)vel.y * active_client->mouse_speed));
 
-	if (mouse_state.scroll) send_command(COMMAND_SCROLL, "%d", mouse_state.scroll);
+	if (mouse_state.scroll) send_command(COMMAND_SCROLL, "%d %d", mouse_state.scroll, active_client->scroll_speed);
 
 	if (mouse_state.left != old_mouse_left)
 	{
@@ -216,7 +231,7 @@ static void forward_input(void)
 		forward_keyboard_input(key_event);
 }
 
-void controler_init(int port)
+void controller_main(int port)
 {
 	printf("starting controller on port %d...\n", port);
 	active_client = server_client;
@@ -226,8 +241,8 @@ void controler_init(int port)
 	dsocket_tcp_server_bind(&server);
 	dsocket_tcp_server_start_listen(&server);
 
-	THREAD controler_receive_thread = MAKE_THREAD();
-	THREAD_CALL(&controler_receive_thread, controler_receive, &active_client->sck);
+	THREAD controller_receive_thread = MAKE_THREAD();
+	THREAD_CALL(&controller_receive_thread, controller_receive, &active_client->sck);
 
 	THREAD accept_clients_thread = MAKE_THREAD();
 	THREAD_CALL(&accept_clients_thread, accept_clients, 0);
@@ -243,7 +258,7 @@ void controler_init(int port)
 			test_edge_hit();
 		else if (control_state.state == CONTROL_STATE_QUIT)
 		{
-			THREAD_KILL(&controler_receive_thread);
+			THREAD_KILL(&controller_receive_thread);
 			THREAD_KILL(&accept_clients_thread);
 			return;
 		}

@@ -1,15 +1,16 @@
 PREFIX=~/.local
 
-CFLAGS=-I./include/ -Ofast -Wno-incompatible-pointer-types -Wno-format-extra-args -fno-stack-protector -Wall -pedantic -g
+CFLAGS=-I./include/ -Ofast -Wno-incompatible-pointer-types -Wno-format-extra-args -Wno-deprecated-declarations -fno-stack-protector -Wall -pedantic -g -Wpedantic
+
 CSRCS=$(shell find ./src/ -type f -name "*.c")
 
 LINUX_CC=gcc
 LINUX_PKG_CONFIG=pkg-config
-LINUX_CFLAGS=`$(LINUX_PKG_CONFIG) --cflags gtk+-3.0` `$(LINUX_PKG_CONFIG) --libs gtk+-3.0` -lX11 -lXtst -lpthread
+LINUX_CFLAGS=`$(LINUX_PKG_CONFIG) --cflags gtk+-3.0` `$(LINUX_PKG_CONFIG) --libs gtk+-3.0` -lX11 -lXtst -lpthread -lXfixes
 
 #WIN_CC=x86_64-w64-mingw32-gcc
 #WIN_PKG_CONFIG=x86_64-w64-mingw32-pkg-config
-#WIN_CFLAGS=`$(WIN_PKG_CONFIG) --static --cflags gtk+-3.0` `$(WIN_PKG_CONFIG) --static --libs gtk+-3.0` -lws2_32
+#WIN_CFLAGS=`$(WIN_PKG_CONFIG) --static --cflags gtk+-3.0` `$(WIN_PKG_CONFIG) --static --libs gtk+-3.0` -lws2_32 -lpthread
 
 WIN_CC=x86_64-w64-mingw32.static-gcc
 WIN_PKG_CONFIG=x86_64-w64-mingw32.static-pkg-config

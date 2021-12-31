@@ -1,6 +1,7 @@
 #include "screen.h"
 
 #include "device_control.h"
+#include "client.h"
 #include "config.h"
 #include "utils.h"
 
@@ -22,9 +23,9 @@ int get_scaled_x_by_edge(int edge)
 	switch (edge)
 	{
 		case EDGE_RIGHT:
-			return SCALE_X(screen_size.x - 5);
+			return SCALE_X(screen_size.x - 1);
 		case EDGE_LEFT:
-			return SCALE_X(5);
+			return SCALE_X(1);
 	}
 	return 0;
 }
@@ -34,9 +35,9 @@ int get_scaled_y_by_edge(int edge)
 	switch (edge)
 	{
 		case EDGE_BOTTOM:
-			return SCALE_Y(screen_size.y - 5);
+			return SCALE_Y(screen_size.y - 1);
 		case EDGE_TOP:
-			return SCALE_Y(5);
+			return SCALE_Y(1);
 	}
 	return 0;
 }
@@ -46,13 +47,13 @@ struct vec get_vec_close_to_edge(struct vec pos, int edge)
 	switch (edge)
 	{
 		case EDGE_RIGHT:
-			return (struct vec){screen_size.x - 6, pos.y};
+			return (struct vec){screen_size.x - 1, pos.y};
 		case EDGE_LEFT:
-			return (struct vec){5, pos.y};
+			return (struct vec){1, pos.y};
 		case EDGE_TOP:
-			return (struct vec){pos.x, 5};
+			return (struct vec){pos.x, 1};
 		case EDGE_BOTTOM:
-			return (struct vec){pos.x, screen_size.y - 6};
+			return (struct vec){pos.x, screen_size.y - 1};
 	}
 	return (struct vec){0, 0};
 }
@@ -63,6 +64,74 @@ struct vec get_scaled_vec_close_to_edge(struct vec pos, int edge)
 	new_pos.x = SCALE_X(new_pos.x);
 	new_pos.y = SCALE_Y(new_pos.y);
 	return new_pos;
+}
+
+int get_pos_on_edge(int edge, struct vec pos)
+{
+	switch (edge)
+	{
+		case EDGE_TOP:
+		case EDGE_BOTTOM:
+			return pos.x;
+		case EDGE_LEFT:
+		case EDGE_RIGHT:
+			return pos.y;
+	}
+	return 0;
+}
+
+int get_scaled_pos_on_edge(int edge, struct vec pos)
+{
+	switch (edge)
+	{
+		case EDGE_TOP:
+		case EDGE_BOTTOM:
+			return SCALE_X(pos.x);
+		case EDGE_LEFT:
+		case EDGE_RIGHT:
+			return SCALE_Y(pos.y);
+	}
+	return 0;
+}
+
+struct vec get_vec_at_edge_pos(int edge, int edge_pos)
+{
+	switch (edge)
+	{
+		case EDGE_TOP:
+			return (struct vec){edge_pos, 1};
+		case EDGE_BOTTOM:
+			return (struct vec){edge_pos, screen_size.y - 2};
+		case EDGE_LEFT:
+			return (struct vec){1, edge_pos};
+		case EDGE_RIGHT:
+			return (struct vec){screen_size.x - 2, edge_pos};
+	}
+	return (struct vec){0, 0};
+}
+
+struct vec get_unscaled_vec_at_edge_pos(int edge, int edge_pos)
+{
+	switch (edge)
+	{
+		case EDGE_TOP:
+			return (struct vec){UNSCALE_X(edge_pos), 1};
+		case EDGE_BOTTOM:
+			return (struct vec){UNSCALE_X(edge_pos), screen_size.y - 2};
+		case EDGE_LEFT:
+			return (struct vec){1, UNSCALE_Y(edge_pos)};
+		case EDGE_RIGHT:
+			return (struct vec){screen_size.x - 2, UNSCALE_Y(edge_pos)};
+	}
+	return (struct vec){0, 0};
+}
+
+bool edge_hit_is_dead_corner(struct vec pos, struct dead_corners dc)
+{
+	return (dc.top_left && pos.x <= dc.size - 1 && pos.y <= dc.size - 1) ||
+		   (dc.top_right && pos.x >= screen_size.x - dc.size && pos.y <= dc.size - 1) ||
+		   (dc.bottom_left && pos.x <= dc.size - 1 && pos.y >= screen_size.y - dc.size) ||
+		   (dc.bottom_left && pos.x >= screen_size.x - dc.size && pos.y >= screen_size.y - dc.size);
 }
 
 int other_edge(int edge)

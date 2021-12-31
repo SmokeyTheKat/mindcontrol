@@ -126,8 +126,8 @@ void* clipboard_serve(void* _)
 {
 	while (1)
 	{
-		clipboard_handel_nonowner_events();
-		clipboard_handel_owner_events();
+		if (clipboard_owner == STATE_LOW) clipboard_handel_nonowner_events();
+		else clipboard_handel_owner_events();
 	}
 }
 
@@ -153,7 +153,7 @@ char* clipboard_get(void)
 {
 	if (clipboard_owner) return clipboard_data;
 	get_clip = STATE_HIGH;
-	STATE_AWAIT(get_clip, STATE_LOW, return clipboard_data);
+	STATE_AWAIT(get_clip, STATE_LOW, { return clipboard_data; });
 }
 
 void clipboard_set(char* data)

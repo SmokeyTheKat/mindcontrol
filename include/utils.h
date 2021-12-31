@@ -52,6 +52,7 @@
 
 #include <pthread.h>
 #include <signal.h>
+#include <unistd.h>
 
 #define SLEEP(_t) usleep((_t)*1000)
 
@@ -64,7 +65,7 @@
 	}
 
 #define THREAD_KILL(_thrd) { \
-	pthread_kill(*(_thrd), 3); \
+	pthread_cancel(*(_thrd)); \
 }
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \

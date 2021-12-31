@@ -9,10 +9,7 @@
 #define CONTROL_STATE_QUIT 3
 
 
-typedef data_state(int x; int y; int edge_from) control_state_t;
-
-extern control_state_t control_state;
-
-void controler_init(int port);
+void controller_main(int port);
+void controller_set_state(state_t state);
 
 #endif

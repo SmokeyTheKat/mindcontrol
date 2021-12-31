@@ -59,13 +59,14 @@ static void interrupt_command(char* data)
 		case COMMAND_VALUE_SCROLL:
 		{
 			//printf("COMMAND_SCROLL\n");
-			int scroll;
-			data_get_value(&data, "%d", &scroll);
-			device_control_cursor_scroll(scroll);
+			int scroll, multiplier;
+			data_get_value(&data, "%d %d", &scroll, &multiplier);
+			for (int i = 0; i < multiplier; i++)
+				device_control_cursor_scroll(scroll);
 		} break;
 		case COMMAND_VALUE_KEYPRESS:
 		{
-			//printf("COMMAND_KEYPRESS\n");
+//            printf("COMMAND_KEYPRESS\n");
 			int keycode;
 			data_get_value(&data, "%d", &keycode);
 			device_control_keyboard_send_press(generic_code_to_system_code(keycode));
@@ -79,11 +80,12 @@ static void interrupt_command(char* data)
 		} break;
 		case COMMAND_VALUE_CURSOR_UPDATE:
 		{
-			//printf("COMMAND_CURSOR_UPDATE\n");
+//            printf("COMMAND_CURSOR_UPDATE\n");
 			struct vec pos;
 			data_get_value(&data, "%d %d", &pos.x, &pos.y);
 			pos.x = (int)(((float)pos.x) * mouse_speed);
 			pos.y = (int)(((float)pos.y) * mouse_speed);
+//            printf("[%d, %d]\n", pos.x, pos.y);
 			device_control_cursor_move(pos.x, pos.y);
 		} break;
 		case COMMAND_VALUE_CURSOR_TO:
@@ -102,19 +104,45 @@ static void interrupt_command(char* data)
 			data_get_string(&data, clip_data);
 			device_control_clipboard_set(clip_data);
 		} break;
+		case COMMAND_VALUE_GO_BY_EDGE_AT:
+		{
+			int edge;
+			int edge_pos;
+			data_get_value(&data, "%d %d", &edge, &edge_pos);
+			
+			struct vec pos = get_unscaled_vec_at_edge_pos(edge, edge_pos);
+			device_control_cursor_move_to(pos.x, pos.y);
+		} break;
 	}
 }
 
-void receiver_init(char* ip, int port)
+void receiver_cleanup(void)
 {
+	close(client.dscr);
+}
+
+void receiver_main(char* ip, int port)
+{
+RECEIVER_INIT_RETRY:
 	printf("connecting to controller on %s:%d\n", ip, port);
 	client = make_dsocket_tcp_client(ip, port);
-	dsocket_tcp_client_connect(&client);
+	if (dsocket_tcp_client_connect(&client) != 0)
+	{
+		close(client.dscr);
+		goto RECEIVER_INIT_RETRY;
+	}
 
 	while (1)
 	{
 		char buffer[9024] = {0};
-		if (dsocket_tcp_client_receive(client, buffer, sizeof(buffer)) <= 0)
+		int bytes_read = dsocket_tcp_client_receive(client, buffer, sizeof(buffer));
+
+		if (bytes_read == 0)
+		{
+			close(client.dscr);
+			goto RECEIVER_INIT_RETRY;
+		}
+		else if (bytes_read < 0)
 			continue;
 
 		char* data = extract_command(buffer);
