@@ -3,6 +3,18 @@
 #include <string.h>
 #include <stddef.h>
 
+
+char* strrstr(char* str, char* chrs)
+{
+	int str_len = strlen(str);
+	int chrs_len = strlen(chrs);
+	for (int i = str_len - 1; i >= 0; i--)
+		for (int j = 0; j < chrs_len; j++)
+			if (str[i] == chrs[j])
+				return &str[i];
+	return 0;
+}
+
 char* extract_command(char* _data)
 {
 	static char* data = 0;

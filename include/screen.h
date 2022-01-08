@@ -5,10 +5,10 @@
 #include "client.h"
 
 #define EDGE_NONE 0
-#define EDGE_RIGHT 1
-#define EDGE_LEFT 2
-#define EDGE_BOTTOM 3
-#define EDGE_TOP 4
+#define EDGE_RIGHT (1 << 1)
+#define EDGE_LEFT (1 << 2)
+#define EDGE_BOTTOM (1 << 3)
+#define EDGE_TOP (1 << 4)
 
 int get_edge_hit(struct vec pos);
 int get_scaled_x_by_edge(int edge);

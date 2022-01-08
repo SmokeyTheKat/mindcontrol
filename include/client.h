@@ -38,6 +38,8 @@ struct client* client_find_by_pos(struct client* client, int x, int y);
 struct client* client_find_by_ip(struct client* client, char* ip);
 struct client* client_find_by_socket(struct client* client, int sck);
 
+extern struct client* server_client;
+
 struct client
 {
 	bool active;

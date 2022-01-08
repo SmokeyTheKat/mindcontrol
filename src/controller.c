@@ -28,6 +28,38 @@ static struct client* active_client;
 
 static data_state(int x; int y; int edge_from) control_state;
 
+char* transfer_client_to_server(struct client* client, char* filepath, long file_length)
+{
+	char* filename = strrstr(filepath, "/\\") + 1;
+
+	char* tmp_filepath = malloc(2048);
+	tmp_filepath[0] = 0;
+
+	strcat(tmp_filepath, "/home/william/.tmp/");
+	strcat(tmp_filepath, filename);
+
+	FILE* fp = fopen(tmp_filepath, "wb");
+	if (fp == 0)
+	{
+		printf("BIIIIIIIIIIIGGGGGG ERRRRROR\n");
+		return 0;
+	}
+
+	char buffer[4096];
+
+	int byte_count;
+	int bytes_read = 0;
+	while (bytes_read < file_length && (byte_count = dsocket_tcp_server_receive(server, client->sck, buffer, sizeof(buffer))) > 0)
+	{
+		fwrite(buffer, 1, MIN(byte_count, file_length - bytes_read), fp);
+		bytes_read += byte_count;
+	}
+
+	fclose(fp);
+
+	return tmp_filepath;
+}
+
 struct client* get_client(void)
 {
 	int sck = dsocket_tcp_server_listen(&server);
@@ -59,23 +91,20 @@ void controller_set_state(state_t state)
 	control_state.state = state;
 }
 
-struct client* client_get_client_in_direction(struct client* client, int direction)
+struct client* client_get_client_in_direction(struct client* client, int edge)
 {
-	switch (direction)
-	{
-		case EDGE_RIGHT:
-			if (client->right) return client->right;
-			break;
-		case EDGE_LEFT:
-			if (client->left) return client->left;
-			break;
-		case EDGE_BOTTOM:
-			if (client->down) return client->down;
-			break;
-		case EDGE_TOP:
-			if (client->up) return client->up;
-			break;
-	}
+	if (edge & EDGE_RIGHT)
+		if (client->right) return client->right;
+
+	if (edge & EDGE_LEFT)
+		if (client->left) return client->left;
+
+	if (edge & EDGE_BOTTOM)
+		if (client->down) return client->down;
+
+	if (edge & EDGE_TOP)
+		if (client->up) return client->up;
+
 	return 0;
 }
 
@@ -105,7 +134,19 @@ CREATE_THREAD(controller_receive, void*, _, {
 		char* data = extract_command(buffer);
 		do
 		{
-			if (IS_COMMAND(COMMAND_NEXT_SCREEN, data))
+			if (IS_COMMAND(COMMAND_TRANSFER_FILE, data))
+			{
+				char filename[8192];
+				data_get_string(&data, filename);
+				data -= 3;
+				printf("%s\n", data);
+				long file_length;
+				data_get_value(&data, "%ld", &file_length);
+				printf("%s : %ld\n", filename, file_length);
+				char* tmp_filepath = transfer_client_to_server(active_client, filename, file_length);
+				set_dragdrop_files(tmp_filepath);
+			}
+			else if (IS_COMMAND(COMMAND_NEXT_SCREEN, data))
 			{
 				int screen_direction;
 				int x;
@@ -194,6 +235,8 @@ void forward_mouse_input(struct mouse_state mouse_state)
 	send_command(COMMAND_CURSOR_UPDATE, "%d %d",
 				(int)((float)vel.x * active_client->mouse_speed),
 				(int)((float)vel.y * active_client->mouse_speed));
+
+	device_control_cursor_move_to(screen_size.x / 2, screen_size.y / 2);
 
 	if (mouse_state.scroll) send_command(COMMAND_SCROLL, "%d %d", mouse_state.scroll, active_client->scroll_speed);
 

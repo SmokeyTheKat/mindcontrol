@@ -6,6 +6,7 @@
 #include <winuser.h>
 #include <pthread.h>
 
+#include "dragdrop.h"
 #include "ddcSocket.h"
 #include "config.h"
 #include "mcerror.h"
@@ -24,6 +25,7 @@ struct DROPFILE
 void device_control_init(void)
 {
 	dsocket_init();
+	init_dragdrop();
 	screen_size = device_control_get_screen_size();
 }
 
@@ -79,23 +81,26 @@ char* device_control_get_ip(void)
 
 void device_control_disable_input(void)
 {
+	ShowCursor(false);
 }
 
 void device_control_enable_input(void)
 {
+	ShowCursor(true);
 }
 
 void device_control_cursor_move(int x, int y)
 {
-//    INPUT ip = {0};
-//    ip.type = INPUT_MOUSE;
-//    ip.mi.mouseData = 0;
-//    ip.mi.dx = x;
-//    ip.mi.dy = y;
-//    ip.mi.dwFlags = MOUSEEVENTF_MOVE;
-//    SendInput(1, &ip, sizeof(ip));
-	struct vec pos = device_control_cursor_get();
-	SetCursorPos(pos.x + x, pos.y + y);
+	INPUT ip = {0};
+	ip.type = INPUT_MOUSE;
+	ip.mi.mouseData = 0;
+	ip.mi.dx = x;
+	ip.mi.dy = y;
+	ip.mi.time = 0;
+	ip.mi.dwFlags = MOUSEEVENTF_MOVE;
+	SendInput(1, &ip, sizeof(ip));
+//    struct vec pos = device_control_cursor_get();
+//    SetCursorPos(pos.x + x, pos.y + y);
 }
 
 void device_control_cursor_move_to(int x, int y)
@@ -107,10 +112,7 @@ void device_control_cursor_left_down(void)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
 	ip.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -118,10 +120,7 @@ void device_control_cursor_left_up(void)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
 	ip.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -129,10 +128,7 @@ void device_control_cursor_right_down(void)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
 	ip.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -140,10 +136,7 @@ void device_control_cursor_right_up(void)
 {
 	INPUT ip = {0};
 	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
 	ip.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -155,7 +148,6 @@ void device_control_keyboard_send_press(int keycode)
 	ip.ki.wScan = 0;
 	ip.ki.dwFlags = 0;
 	ip.ki.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -167,7 +159,6 @@ void device_control_keyboard_send_release(int keycode)
 	ip.ki.wScan = 0;
 	ip.ki.dwFlags = 2;
 	ip.ki.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
 	SendInput(1, &ip, sizeof(ip));
 }
 
@@ -223,15 +214,16 @@ void device_control_mouse_flush(void)
 
 struct mouse_state device_control_get_mouse_state(void)
 {
-	POINT pos;
-	GetCursorPos(&pos);
-	bool left = true == GetKeyState(1);
-	bool right = true == GetKeyState(2);
-	bool middle = true == GetKeyState(4);
+//    POINT pos;
+//    GetCursorPos(&pos);
+	struct vec vel = device_control_cursor_on_move_get_relative();
+	bool left = GetKeyState(1) & 0x8000;
+	bool right = GetKeyState(2) & 0x8000;
+	bool middle = GetKeyState(4) & 0x8000;
 	return (struct mouse_state){
 		.ready=true,
-		.x=pos.x,
-		.y=pos.y,
+		.x=vel.x,
+		.y=vel.y,
 		.scroll=0,
 		.left=left,
 		.right=right,

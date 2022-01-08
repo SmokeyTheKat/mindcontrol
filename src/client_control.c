@@ -11,12 +11,48 @@
 #include "utils.h"
 #include "config.h"
 #include "screen.h"
+#include "list.h"
+#include "dragdrop.h"
 
 #define send_command(command, format, ...) _send_command("[" command format "]", __VA_ARGS__)
 static void _send_command(char* fmt, ...);
 static void interrupt_command(char* data);
 
 static struct dsocket_tcp_client client;
+
+long get_file_length(char* filepath)
+{
+	FILE* fp = fopen(filepath, "rb");
+	if (fp == 0) return 0;
+	fseek(fp, 0L, SEEK_END);
+	long length = ftell(fp) - 1;
+	fclose(fp);
+	return length;
+}
+
+void transfer_file_to_server(char* filepath)
+{
+	long file_length = get_file_length(filepath);
+	printf("len: %ld\n", file_length);
+	send_command(COMMAND_TRANSFER_FILE, "%s\x01 %ld", filepath, file_length);
+
+	FILE* fp = fopen(filepath, "rb");
+
+	if (fp == 0)
+		return;
+
+	int byte_count;
+	int bytes_read = 0;
+	char buffer[4096];
+	while (byte_count < file_length && (byte_count = fread(buffer, 1, sizeof(buffer), fp)) > 0)
+	{
+		if (dsocket_tcp_client_send(client, buffer, byte_count) <= 0)
+			break;
+		bytes_read += byte_count;
+	}
+
+	fclose(fp);
+}
 
 static void _send_command(char* fmt, ...)
 {
@@ -145,6 +181,8 @@ RECEIVER_INIT_RETRY:
 		else if (bytes_read < 0)
 			continue;
 
+		printf("%s\n", buffer);
+
 		char* data = extract_command(buffer);
 		if (data == 0) continue;
 
@@ -155,7 +193,15 @@ RECEIVER_INIT_RETRY:
 		int edge_hit = get_edge_hit(pos);
 		if (edge_hit != EDGE_NONE)
 		{
+			struct mouse_state mouse_state = device_control_get_mouse_state();
+			if (mouse_state.left)
+			{
+				struct list* files = get_dragdrop_files();
+				char* file = list_first(files, char*);
+				transfer_file_to_server(file);
+			}
 			send_command(COMMAND_NEXT_SCREEN, "%d %d %d", edge_hit, SCALE_X(pos.x), SCALE_Y(pos.y));
 		}
+		else send_command("OMHI", "%d", 0);
 	}
 }

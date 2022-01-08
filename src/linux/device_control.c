@@ -30,6 +30,7 @@
 #include "mcerror.h"
 #include "utils.h"
 #include "clipboard.h"
+#include "list.h"
 
 struct raw_key_event
 {
@@ -53,6 +54,8 @@ static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
 #define MOUSE_X_NAME "Logitech M720 Triathlon"
 #define KEYBOARD_X_NAME "Kingston HyperX Alloy FPS Pro Mechanical Gaming Keyboard"
 
+void init_dragdrop(void) {}
+struct list* get_dragdrop_files(void) {}
 
 void device_control_init(void)
 {

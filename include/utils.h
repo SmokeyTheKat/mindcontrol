@@ -78,6 +78,7 @@
 
 #endif
 
+char* strrstr(char*, char*);
 char* extract_command(char* _data);
 void data_get_value(char** data, char* fmt, ...);
 void data_get_string(char** data, char* output);

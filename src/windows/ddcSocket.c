@@ -28,7 +28,7 @@ int dsocket_tcp_server_bind(struct dsocket_tcp_server* sck)
 		return 1;
 	if (setsockopt(sck->dscr, SOL_SOCKET, SO_REUSEADDR, (char*)&(sck->opt), sizeof(sck->opt)))
 		return 1;
-	if (setsockopt(sck->dscr, IPPROTO_TCP, TCP_NODELAY, (char*)&(BOOL){1}, sizeof(BOOL)))
+	if (setsockopt(sck->dscr, IPPROTO_TCP, TCP_NODELAY, (int*)&(int){1}, sizeof(int)))
 		return 1;
 	sck->server.sin_family = AF_INET;
 	sck->server.sin_addr.s_addr = INADDR_ANY;
@@ -92,7 +92,7 @@ int dsocket_tcp_client_connect(struct dsocket_tcp_client* sck)
 				sizeof timeout) < 0)
 		return 1;
 
-	if (setsockopt(sck->dscr, IPPROTO_TCP, TCP_NODELAY, (char*)&(BOOL){1}, sizeof(BOOL)))
+	if (setsockopt(sck->dscr, IPPROTO_TCP, TCP_NODELAY, (int*)&(int){1}, sizeof(int)))
 		return 1;
 
 	return connect(sck->dscr, (struct sockaddr*)&sck->server, sizeof(sck->server));

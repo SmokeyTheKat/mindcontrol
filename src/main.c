@@ -8,14 +8,27 @@
 #include "client.h"
 #include "config.h"
 #include "gui.h"
+#include "dragdrop.h"
 
+#ifdef _WIN64
+#include "windows/wininfo.h"
+HINSTANCE hinstance;
+int WINAPI WinMain(HINSTANCE _hinstance,
+				   HINSTANCE hprev_instance,
+				   LPSTR cmd_line,
+				   int cmd_show)
+{
+	int argc;
+	char** argv = CommandLineToArgvW(cmd_line, &argc);
+	hinstance = _hinstance;
+#else
 int main(int argc, char** argv)
 {
-	if (argc == 1) return 0;
+#endif
 	read_args(argc, argv);
 	device_control_init();
 	if (user_type == 'c') controller_main(server_port);
-	if (user_type == 'r') receiver_main(server_ip, server_port);
-	gui_main();
+	else if (user_type == 'r') receiver_main(server_ip, server_port);
+	else gui_main();
 	return 0;
 }

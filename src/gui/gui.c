@@ -1,3 +1,5 @@
+#include "gui.h"
+
 #include <gtk/gtk.h>
 #include <glib.h>
 
@@ -6,9 +8,9 @@
 #include "device_control.h"
 #include "vec.h"
 #include "list.h"
-#include "gui.h"
 #include "utils.h"
 #include "ddcSocket.h"
+#include "config.h"
 
 #define LAST_WAS_SERVER 0
 #define LAST_WAS_CLIENT 1
@@ -49,6 +51,7 @@ static GtkWidget* entry_server_ip;
 static GtkWidget* client_scan_dialog;
 static GtkWidget* server_scan_dialog;
 static GtkWidget* notebook_tabs;
+static GtkWidget* button_client_start;
 
 static GtkPaned* gtk_labeled_new_with_widget(char* label, GtkWidget* widget)
 {
@@ -598,6 +601,7 @@ static void save_config(GtkWidget* widget, struct menu_options* menu_options)
 static void load_config(void)
 {
 	FILE* fp = fopen("./mindcontrol.conf", "r");
+	if (!fp) return;
 	char buffer[4096];
 	
 	int port;
@@ -737,6 +741,8 @@ static void display_client_scan(GtkWidget* widget, struct gclient* _)
 	g_thread_new("thread", client_scan, 0);
 }
 
+static struct client_menu_options menu_options;
+
 static GtkWidget* generate_client_menu_controls(void)
 {
 	GtkWidget* menu = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -756,13 +762,12 @@ static GtkWidget* generate_client_menu_controls(void)
 	gtk_entry_set_text(GTK_ENTRY(entry_server_port), "1234");
 	GtkWidget* labeled_entry_server_port = gtk_labeled_new_with_widget("Controller port:", entry_server_port);
 
-	GtkWidget* button_start = gtk_button_new_with_label("start");
-	static struct client_menu_options menu_options;
+	button_client_start = gtk_button_new_with_label("start");
 	menu_options.last = LAST_WAS_CLIENT;
-	menu_options.button_start = button_start;
+	menu_options.button_start = button_client_start;
 	menu_options.entry_ip = entry_server_ip;
 	menu_options.entry_port = entry_server_port;
-	g_signal_connect(button_start, "clicked", G_CALLBACK(toggle_client), &menu_options);
+	g_signal_connect(button_client_start, "clicked", G_CALLBACK(toggle_client), &menu_options);
 
 	GtkWidget* button_save_config = gtk_button_new_with_label("save config");
 	g_signal_connect(button_save_config, "clicked", G_CALLBACK(save_config), &menu_options);
@@ -772,7 +777,7 @@ static GtkWidget* generate_client_menu_controls(void)
 	gtk_box_pack_start(GTK_BOX(menu), labeled_entry_server_ip, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), labeled_entry_server_port, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), button_save_config, false, false, 0);
-	gtk_box_pack_start(GTK_BOX(menu), button_start, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(menu), button_client_start, false, false, 0);
 
 	return menu;
 }
@@ -808,6 +813,24 @@ static void activate(GtkApplication *app, gpointer user_data)
 
 	load_config();
 
+	if (user_type == 'a')
+	{
+		toggle_client(button_client_start, &menu_options);
+//        g_signal_new(
+//            "clicked",
+//            G_TYPE_OBJECT,
+//            G_SIGNAL_RUN_FIRST,
+//            0,
+//            NULL, NULL,
+//            g_cclosure_marshal_VOID__POINTER,
+//            G_TYPE_NONE,
+//            2,
+//            button_client_start,
+//            &menu_options
+//        );
+	}
+
+
 	g_thread_new("thread", client_scan, 0);
 }
 
@@ -819,8 +842,8 @@ int gui_main(void)
 
 	GtkApplication* app = gtk_application_new("org.gtk.example", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK (activate), NULL);
-	char* argv[] = {"mindcontrol"};
-	int status = g_application_run(G_APPLICATION (app), 1, argv);
+	char* argv[] = {""};
+	int status = g_application_run(G_APPLICATION (app), 0, argv);
 	g_object_unref (app);
 	return status;
 }
