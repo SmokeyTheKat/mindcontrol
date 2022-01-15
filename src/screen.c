@@ -113,12 +113,12 @@ bool edge_hit_is_dead_corner(struct vec pos, struct dead_corners dc)
 int other_edge(int edge)
 {
 	if (edge & EDGE_RIGHT)
-		return edge ^ EDGE_RIGHT | EDGE_LEFT;
+		return edge ^ (EDGE_RIGHT | EDGE_LEFT);
 	if (edge & EDGE_LEFT)
-		return edge ^ EDGE_LEFT | EDGE_RIGHT;
+		return edge ^ (EDGE_LEFT | EDGE_RIGHT);
 	if (edge & EDGE_BOTTOM)
-		return edge ^ EDGE_BOTTOM | EDGE_TOP;
+		return edge ^ (EDGE_BOTTOM | EDGE_TOP);
 	if (edge & EDGE_TOP)
-		return edge ^ EDGE_TOP | EDGE_BOTTOM;
+		return edge ^ (EDGE_TOP | EDGE_BOTTOM);
 	return EDGE_NONE;
 }

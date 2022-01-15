@@ -1,6 +1,6 @@
 PREFIX=~/.local
 
-CFLAGS=-I./include/ -Wno-incompatible-pointer-types -Wno-format-extra-args -Wno-deprecated-declarations -fno-stack-protector -Wall -pedantic -g -Wpedantic
+CFLAGS=-I./include/ -Wno-incompatible-pointer-types -Wno-format-extra-args -Wno-deprecated-declarations -fno-stack-protector -Wall -pedantic -g -Wpedantic -Ofast
 
 CSRCS=$(shell find ./src/ -type f -name "*.c")
 

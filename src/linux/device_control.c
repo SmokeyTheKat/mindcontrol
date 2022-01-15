@@ -55,7 +55,7 @@ static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
 #define KEYBOARD_X_NAME "Kingston HyperX Alloy FPS Pro Mechanical Gaming Keyboard"
 
 void init_dragdrop(void) {}
-struct list* get_dragdrop_files(void) {}
+struct list* get_dragdrop_files(void) { return 0; }
 
 void device_control_init(void)
 {
@@ -68,7 +68,7 @@ void device_control_init(void)
 	int flags = fcntl(mouse_fd, F_GETFL, 0);
 	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
 
-	char keyboard_event_path[1024] = {0};
+//    char keyboard_event_path[1024] = {0};
 //    load_shell_command("/dev/input/event", keyboard_event_path, sizeof(keyboard_event_path));
 	keyboard_fd = open("/dev/input/event2", O_RDONLY | O_NONBLOCK);
 

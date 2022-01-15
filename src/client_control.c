@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "ddcSocket.h"
 #include "device_control.h"
@@ -41,7 +43,7 @@ void transfer_file_to_server(char* filepath)
 	if (fp == 0)
 		return;
 
-	int byte_count;
+	int byte_count = 0;
 	int bytes_read = 0;
 	char buffer[4096];
 	while (byte_count < file_length && (byte_count = fread(buffer, 1, sizeof(buffer), fp)) > 0)
@@ -148,6 +150,11 @@ static void interrupt_command(char* data)
 			
 			struct vec pos = get_unscaled_vec_at_edge_pos(edge, edge_pos);
 			device_control_cursor_move_to(pos.x, pos.y);
+		} break;
+		case COMMAND_VALUE_PING:
+		{
+			printf("PING\n");
+			send_command(COMMAND_PING, "", 0);
 		} break;
 	}
 }

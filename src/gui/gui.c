@@ -2,6 +2,8 @@
 
 #include <gtk/gtk.h>
 #include <glib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "client.h"
 #include "controller.h"
@@ -96,8 +98,8 @@ bool screen_add_exists(struct gclient* orig_screen, struct gclient* screen, int 
 				current != orig_screen
 			)
 		{
-			free_list(&seen);
-			free_list(&queue);
+			free_list(&seen, struct gclient*);
+			free_list(&queue, struct gclient*);
 			return true;
 		}
 
@@ -106,13 +108,13 @@ bool screen_add_exists(struct gclient* orig_screen, struct gclient* screen, int 
 			if (current->client.directions[j] &&
 				list_index_of(&seen, current->client.directions[j], struct gclient*) == -1)
 			{
-				list_push_back(&queue, current->client.directions[j], struct gclient*);
-				list_push_back(&seen, current->client.directions[j], struct gclient*);
+				list_push_back(&queue, current->client.directions[j], struct client*);
+				list_push_back(&seen, current->client.directions[j], struct client*);
 			}
 		}
 	}
-	free_list(&seen);
-	free_list(&queue);
+	free_list(&seen, struct gclient*);
+	free_list(&queue, struct gclient*);
 	return false;
 }
 
@@ -448,10 +450,12 @@ struct client_options
 
 CREATE_THREAD(run_controller, int, port, {
 	controller_main(port);
+	return 0;
 })
 
 CREATE_THREAD(run_client, struct client_options, options, {
 	receiver_main(options.ip, options.port);
+	return 0;
 })
 
 static void toggle_controller(GtkWidget* widget, struct menu_options* menu_options)
@@ -524,7 +528,7 @@ bool server_scan(void* _)
 
 	for (int i = 0; i < 255; i++)
 	{
-		char ip[16] = {0};
+		char ip[24] = {0};
 		sprintf(ip, "%s%d", base_ip, i);
 
 		printf("trying %s:%d\n", ip, 6969);
@@ -714,33 +718,6 @@ bool client_scan(void* _)
 	}
 }
 
-static void display_client_scan(GtkWidget* widget, struct gclient* _)
-{
-	(void)_;
-	printf("scanning for controller...\n");
-	client_scan_dialog = gtk_dialog_new_with_buttons("Get Text",
-										  GTK_WINDOW(window),
-										  GTK_DIALOG_MODAL,
-										  GTK_STOCK_OK,
-										  GTK_RESPONSE_OK,
-										  NULL);
-
-	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(client_scan_dialog));
-
-	GtkWidget* spinner = gtk_spinner_new();
-	gtk_spinner_start(GTK_SPINNER(spinner));
-
-	GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-	gtk_box_pack_start(GTK_BOX(box), gtk_label_new_with_mnemonic("searching for controller..."), false, false, 0);
-	gtk_box_pack_start(GTK_BOX(box), spinner, true, true, 0);
-
-	gtk_container_add(GTK_CONTAINER(content_area), box);
-
-	gtk_widget_show_all(client_scan_dialog);
-
-	g_thread_new("thread", client_scan, 0);
-}
-
 static struct client_menu_options menu_options;
 
 static GtkWidget* generate_client_menu_controls(void)
@@ -790,10 +767,9 @@ static GtkWidget* generate_client_page(void)
 static void activate(GtkApplication *app, gpointer user_data)
 {
 	window = gtk_application_window_new(app);
-	gtk_window_set_title(GTK_WINDOW(window), "Window");
-	gtk_window_set_default_size(GTK_WINDOW(window), 0, 0);
+	gtk_window_set_title(GTK_WINDOW(window), "mindcontrol");
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
-	gtk_widget_set_hexpand(window, false);
+//    gtk_widget_set_hexpand(window, false);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
 	root.button = gtk_button_new_with_image_from_file("./controller.png", 80, 80);

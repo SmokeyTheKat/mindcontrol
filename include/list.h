@@ -15,6 +15,8 @@ struct list
 	intmax_t capacity;
 };
 
+intmax_t __list_index_of(struct list* list, void* find, intmax_t type_size);
+
 #define make_list(cap, type) (struct list){ \
 		.data=malloc(sizeof(type)*cap), \
 		.length=0, \
@@ -86,7 +88,7 @@ struct list
 			(list)->capacity += (sizeof(type) * LIST_EXPAND_SIZE); \
 			(list)->data = realloc((list)->data, (list)->capacity); \
 		} \
-		(*(type*)(&(list)->data[(list)->length])) = (type)(value); \
+		(*(type*)(&(list)->data[(list)->length])) = *(type*)&(value); \
 		(list)->length += sizeof(type); \
 	}
 
@@ -95,7 +97,7 @@ struct list
 	}
 
 #define list_set(list, value, idx, type) { \
-		((type*)(list)->data)[(idx)] = (type)(value); \
+		((type*)(list)->data)[(idx)] = *(type*)&(value); \
 	}
 
 #define list_get(list, idx, type) \
@@ -103,18 +105,6 @@ struct list
 
 #define list_index_of(list, find, type) \
 	__list_index_of((list), (&(type){((type)find)}), sizeof(type))
-
-static intmax_t __list_index_of(struct list* list, void* find, intmax_t type_size)
-{
-	for (intmax_t i = 0; i < list->length; i += type_size)
-	{
-		if (0 == memcmp(&list->data[i], find, type_size))
-		{
-			return i / type_size;
-		}
-	}
-	return -1;
-}
 
 #define list_replace(list, find, replace, type) { \
 		for (intmax_t i = 0; i < list_length((list), type); i++) \
@@ -141,13 +131,13 @@ static intmax_t __list_index_of(struct list* list, void* find, intmax_t type_siz
 
 #define list_add(dest, src, type) { \
 		for (intmax_t i = 0; i < list_length((src), type); i++) \
-			list_push((dest), list_get((src), i, type), type); \
+			list_push_back((dest), list_get((src), i, type), type); \
 	}
 
 #define list_copy(dest, src, type) { \
 		list_expand((dest), list_capacity((src), type), type); \
 		for (intmax_t i = 0; i < list_length((src), type); i++) \
-			list_push((dest), list_get((src), i, type), type) \
+			list_push_back((dest), list_get((src), i, type), type) \
 	}
 
 #endif

@@ -39,8 +39,8 @@ struct client* client_find_by_pos(struct client* client, int x, int y)
 	}
 	current = 0;
 CLIENT_FIND_BY_POS_RETURN:
-	free_list(&seen);
-	free_list(&queue);
+	free_list(&seen, struct client*);
+	free_list(&queue, struct client*);
 	return current;
 }
 
@@ -70,8 +70,8 @@ struct client* client_find_by_ip(struct client* client, char* ip)
 	}
 	current = 0;
 CLIENT_FIND_BY_POS_RETURN:
-	free_list(&seen);
-	free_list(&queue);
+	free_list(&seen, struct client*);
+	free_list(&queue, struct client*);
 	return current;
 }
 
@@ -101,7 +101,7 @@ struct client* client_find_by_socket(struct client* client, int sck)
 	}
 	current = 0;
 CLIENT_FIND_BY_POS_RETURN:
-	free_list(&seen);
-	free_list(&queue);
+	free_list(&seen, struct client*);
+	free_list(&queue, struct client*);
 	return current;
 }

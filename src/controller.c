@@ -13,6 +13,7 @@
 #include "state.h"
 #include "gui.h"
 #include "utils.h"
+#include "dragdrop.h"
 
 #define MAX_VEL ((struct vec){30, 30})
 
@@ -25,6 +26,8 @@ static void forward_input(void);
 static struct dsocket_tcp_server server;
 
 static struct client* active_client;
+
+static unsigned long ping_start = 0;
 
 static data_state(int x; int y; int edge_from) control_state;
 
@@ -146,6 +149,10 @@ CREATE_THREAD(controller_receive, void*, _, {
 				char* tmp_filepath = transfer_client_to_server(active_client, filename, file_length);
 				set_dragdrop_files(tmp_filepath);
 			}
+			else if (IS_COMMAND(COMMAND_PING, data))
+			{
+				printf("PING: %llu\n", (unsigned long long)(time(0) - ping_start));
+			}
 			else if (IS_COMMAND(COMMAND_NEXT_SCREEN, data))
 			{
 				int screen_direction;
@@ -194,6 +201,9 @@ static void switch_state_to_main(void)
 	struct vec edge_pos = get_vec_close_to_edge((struct vec){control_state.x, control_state.y}, other_edge(control_state.edge_from));
 	device_control_cursor_move_to(edge_pos.x, edge_pos.y);
 	control_state.state = CONTROL_STATE_MAIN;
+	send_command(COMMAND_PING, "", 0);
+	ping_start = time(0);
+	printf("time: %ld\n", ping_start);
 }
 
 static void switch_to_client_on_edge(int edge_hit)
