@@ -684,12 +684,13 @@ static GtkWidget* generate_server_menu_controls(void)
 static GtkWidget* generate_server_page(void)
 {
 	client_grid = generate_client_grid();
+//    client_grid = generate_monitor_view();
 	screen_add_new_screen_buttons(&root);
 
 	GtkWidget* menu = generate_server_menu_controls();
 
 	GtkWidget* paned = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
-	gtk_paned_pack1(GTK_PANED(paned), client_grid, false, false);
+	gtk_paned_pack1(GTK_PANED(paned), client_grid, true, false);
 	gtk_paned_pack2(GTK_PANED(paned), menu, false, false);
 
 	return paned;
@@ -768,7 +769,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 {
 	window = gtk_application_window_new(app);
 	gtk_window_set_title(GTK_WINDOW(window), "mindcontrol");
-	gtk_window_set_resizable(GTK_WINDOW(window), false);
+//    gtk_window_set_resizable(GTK_WINDOW(window), false);
 //    gtk_widget_set_hexpand(window, false);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 

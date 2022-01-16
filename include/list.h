@@ -73,6 +73,9 @@ intmax_t __list_index_of(struct list* list, void* find, intmax_t type_size);
 	(conditions) && (ptrdiff_t)var_name != (ptrdiff_t)&(list)->data[(list)->length]; \
 	var_name++
 
+#define list_pos(list, var, type) \
+	((((ptrdiff_t)(var) - (ptrdiff_t)(list)->data)) / sizeof(type))
+
 #define list_expand(list, size, type) { \
 		if (list_capacity((list), type) < size) \
 		{ \
