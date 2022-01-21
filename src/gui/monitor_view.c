@@ -39,10 +39,10 @@ struct list screens;
 static int lmx = 0;
 static int lmy = 0;
 
-gboolean c_draw(GtkWidget* widget, cairo_t* cr, void*)
+gboolean c_draw(GtkWidget* widget, cairo_t* cr, void* _)
 {
+	(void)_;
 	guint width, height;
-	GdkRGBA color;
 	GtkStyleContext *context;
 
 	context = gtk_widget_get_style_context(widget);
@@ -113,6 +113,8 @@ int intersecting(struct screen a, struct screen b)
 		return 3;
 	if (mt > mr && mt > ml && mt > mb)
 		return 4;
+
+	return 0;
 }
 
 void center(GtkWidget* widget)
@@ -145,7 +147,7 @@ void center(GtkWidget* widget)
 	{
 		s->x += dx;
 		s->y += dy;
-		printf("i: %d   dx: %d   dy: %d\n", list_pos(&screens, s, struct screen), s->x, s->y);
+		printf("i: %d   dx: %d   dy: %d\n", (int)list_pos(&screens, s, struct screen), s->x, s->y);
 	}
 
 	REDRAW(widget);
@@ -189,8 +191,9 @@ void update_screen(GtkWidget* widget, int x, int y)
 	REDRAW(widget);
 }
 
-gboolean c_motion(GtkWidget* widget, GdkEventMotion* event, void*)
+gboolean c_motion(GtkWidget* widget, GdkEventMotion* event, void* _)
 {
+	(void)_;
 	if (!selected)
 		return FALSE;
 	if (!(event->state & GDK_BUTTON1_MASK))
@@ -218,8 +221,9 @@ bool is_cursor_over_client_modifier(int x, int y)
 	return (x >= 0 && x < 30) && (y >= 0 && y < 30);
 }
 
-gboolean c_mouse_down(GtkWidget* widget, GdkEventButton* event, void*)
+gboolean c_mouse_down(GtkWidget* widget, GdkEventButton* event, void* _)
 {
+	(void)_;
 	int mx = event->x / zoom;
 	int my = event->y / zoom;
 
@@ -253,8 +257,9 @@ void edit_client(struct screen* screen)
 	printf("edit client \"%s\"\n", screen->name);
 }
 
-gboolean c_mouse_up(GtkWidget* widget, GdkEventButton* event, void*)
+gboolean c_mouse_up(GtkWidget* widget, GdkEventButton* event, void* _)
 {
+	(void)_;
 	if (selected == 0) return FALSE;
 
 	int mx = event->x / zoom;
@@ -276,10 +281,13 @@ gboolean c_mouse_up(GtkWidget* widget, GdkEventButton* event, void*)
 	center(widget);
 	REDRAW(widget);
 	selected = 0;
+
+	return 0;
 }
 
-gboolean c_zoom(GtkWidget* widget, GdkEventScroll* event, void*)
+gboolean c_zoom(GtkWidget* widget, GdkEventScroll* event, void* _)
 {
+	(void)_;
 	int dir = event->direction;
 	printf("(%d)\n", dir);
 	if (dir == GDK_SCROLL_UP)
@@ -288,15 +296,20 @@ gboolean c_zoom(GtkWidget* widget, GdkEventScroll* event, void*)
 		zoom -= zoom_speed;
 	center(widget);
 	REDRAW(widget);
+
+	return 0;
 }
 
-gboolean c_resize(GtkWidget* widget, GtkAllocation* allocation, void*)
+gboolean c_resize(GtkWidget* widget, GtkAllocation* allocation, void* _)
 {
+	(void)_;
 	printf("width = %d, height = %d\n", allocation->width, allocation->height);
 	width = allocation->width;
 	height = allocation->height;
 	center(widget);
 	REDRAW(widget);
+
+	return 0;
 }
 
 GtkWidget* generate_monitor_view(void)

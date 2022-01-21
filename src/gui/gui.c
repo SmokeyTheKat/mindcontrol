@@ -243,13 +243,13 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_scroll_speed), 0);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_scroll_speed), screen->client.scroll_speed);
 
-	GtkWidget* labeled_mouse_speed = gtk_labeled_new_with_widget("Mouse speed: ", spin_button_mouse_speed);
-	GtkWidget* labeled_scroll_speed = gtk_labeled_new_with_widget("Scroll speed: ", spin_button_scroll_speed);
+	GtkWidget* labeled_mouse_speed = gtk_labeled_new_with_widget("Mouse Speed: ", spin_button_mouse_speed);
+	GtkWidget* labeled_scroll_speed = gtk_labeled_new_with_widget("Scroll Speed: ", spin_button_scroll_speed);
 
-	GtkWidget* check_button_dc_top_left = gtk_check_button_new_with_label("top left");
-	GtkWidget* check_button_dc_top_right = gtk_check_button_new_with_label("top right");
-	GtkWidget* check_button_dc_bottom_left = gtk_check_button_new_with_label("bottom left");
-	GtkWidget* check_button_dc_bottom_right = gtk_check_button_new_with_label("bottom right");
+	GtkWidget* check_button_dc_top_left = gtk_check_button_new_with_label("Top Left");
+	GtkWidget* check_button_dc_top_right = gtk_check_button_new_with_label("Top Right");
+	GtkWidget* check_button_dc_bottom_left = gtk_check_button_new_with_label("Bottom Left");
+	GtkWidget* check_button_dc_bottom_right = gtk_check_button_new_with_label("Bottom Right");
 
 	gtk_toggle_button_set_active(check_button_dc_top_left, screen->client.dead_corners.top_left);
 	gtk_toggle_button_set_active(check_button_dc_top_right, screen->client.dead_corners.top_right);
@@ -260,10 +260,10 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_dc_size), 0);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_dc_size), screen->client.dead_corners.size);
 
-	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("corner size: ", spin_button_dc_size);
+	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("Corner Size: ", spin_button_dc_size);
 
 	GtkWidget* grid_dead_corners = gtk_grid_new();
-	gtk_grid_attach(GTK_GRID(grid_dead_corners), gtk_label_new_with_mnemonic("dead corners:"), 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid_dead_corners), gtk_label_new_with_mnemonic("Dead Corners:"), 0, 0, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_left, 0, 1, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_top_right, 1, 1, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid_dead_corners), check_button_dc_bottom_left, 0, 2, 1, 1);
@@ -271,7 +271,7 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 	gtk_grid_attach(GTK_GRID(grid_dead_corners), labeled_dc_size, 0, 3, 2, 1);
 
 
-	GtkWidget* button_remove = gtk_button_new_with_label("remove");
+	GtkWidget* button_remove = gtk_button_new_with_label("Remove");
 	
 	gtk_box_pack_start(GTK_BOX(box), labeled_client_ip, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(box), labeled_mouse_speed, false, false, 0);
@@ -346,7 +346,7 @@ static void edit_master(GtkWidget* widget, struct gclient* screen)
 	gtk_spin_button_set_digits(GTK_SPIN_BUTTON(spin_button_dc_size), 0);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(spin_button_dc_size), screen->client.dead_corners.size);
 
-	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("corner size: ", spin_button_dc_size);
+	GtkWidget* labeled_dc_size = gtk_labeled_new_with_widget("Corner Size: ", spin_button_dc_size);
 
 	GtkWidget* grid_dead_corners = gtk_grid_new();
 	gtk_grid_attach(GTK_GRID(grid_dead_corners), gtk_label_new_with_mnemonic("dead corners:"), 0, 0, 1, 1);
@@ -466,7 +466,7 @@ static void toggle_controller(GtkWidget* widget, struct menu_options* menu_optio
 	instance_running = !instance_running;
 	if (instance_running)
 	{
-		gtk_button_set_label(menu_options->button_start, "stop");
+		gtk_button_set_label(menu_options->button_start, "Stop");
 
 		instance_thread = MAKE_THREAD();
 		*port = atoi(gtk_entry_get_text(menu_options->entry_port));
@@ -474,7 +474,7 @@ static void toggle_controller(GtkWidget* widget, struct menu_options* menu_optio
 	}
 	else
 	{
-		gtk_button_set_label(menu_options->button_start, "start");
+		gtk_button_set_label(menu_options->button_start, "Start");
 
 		controller_set_state(CONTROL_STATE_QUIT);
 		for (int i = 0; i < 100; i++)
@@ -493,14 +493,14 @@ static void toggle_client(GtkWidget* widget, struct client_menu_options* menu_op
 	instance_running = !instance_running;
 	if (instance_running)
 	{
-		gtk_button_set_label(menu_options->button_start, "stop");
+		gtk_button_set_label(menu_options->button_start, "Stop");
 
 		instance_thread = MAKE_THREAD();
 		THREAD_CALL(&instance_thread, run_client, client_options);
 	}
 	else
 	{
-		gtk_button_set_label(menu_options->button_start, "start");
+		gtk_button_set_label(menu_options->button_start, "Start");
 
 		controller_set_state(CONTROL_STATE_QUIT);
 		for (int i = 0; i < 100; i++)
@@ -658,17 +658,17 @@ static GtkWidget* generate_server_menu_controls(void)
 	gtk_entry_set_text(GTK_ENTRY(entry_server_port), "1234");
 	GtkWidget* labeled_entry_server_port = gtk_labeled_new_with_widget("Controller port:", entry_server_port);
 
-	GtkWidget* scan_start = gtk_button_new_with_label("pair");
+	GtkWidget* scan_start = gtk_button_new_with_label("Pair");
 	g_signal_connect(scan_start, "clicked", G_CALLBACK(display_server_scan), 0);
 
-	GtkWidget* button_start = gtk_button_new_with_label("start");
+	GtkWidget* button_start = gtk_button_new_with_label("Start");
 	static struct menu_options menu_options;
 	menu_options.last = LAST_WAS_SERVER;
 	menu_options.button_start = button_start;
 	menu_options.entry_port = entry_server_port;
 	g_signal_connect(button_start, "clicked", G_CALLBACK(toggle_controller), &menu_options);
 
-	GtkWidget* button_save_config = gtk_button_new_with_label("save config");
+	GtkWidget* button_save_config = gtk_button_new_with_label("Save Config");
 	g_signal_connect(button_save_config, "clicked", G_CALLBACK(save_config), &menu_options);
 
 	gtk_box_pack_start(GTK_BOX(menu), labeled_label_my_ip, false, false, 0);
@@ -740,14 +740,14 @@ static GtkWidget* generate_client_menu_controls(void)
 	gtk_entry_set_text(GTK_ENTRY(entry_server_port), "1234");
 	GtkWidget* labeled_entry_server_port = gtk_labeled_new_with_widget("Controller port:", entry_server_port);
 
-	button_client_start = gtk_button_new_with_label("start");
+	button_client_start = gtk_button_new_with_label("Start");
 	menu_options.last = LAST_WAS_CLIENT;
 	menu_options.button_start = button_client_start;
 	menu_options.entry_ip = entry_server_ip;
 	menu_options.entry_port = entry_server_port;
 	g_signal_connect(button_client_start, "clicked", G_CALLBACK(toggle_client), &menu_options);
 
-	GtkWidget* button_save_config = gtk_button_new_with_label("save config");
+	GtkWidget* button_save_config = gtk_button_new_with_label("Save Config");
 	g_signal_connect(button_save_config, "clicked", G_CALLBACK(save_config), &menu_options);
 
 	gtk_box_pack_start(GTK_BOX(menu), labeled_label_my_ip, false, false, 0);
@@ -769,7 +769,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 {
 	window = gtk_application_window_new(app);
 	gtk_window_set_title(GTK_WINDOW(window), "mindcontrol");
-//    gtk_window_set_resizable(GTK_WINDOW(window), false);
+	gtk_window_set_resizable(GTK_WINDOW(window), false);
 //    gtk_widget_set_hexpand(window, false);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
@@ -781,8 +781,8 @@ static void activate(GtkApplication *app, gpointer user_data)
 	GtkWidget* server_page = generate_server_page();
 	GtkWidget* client_page = generate_client_page();
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook_tabs), server_page, gtk_label_new_with_mnemonic("server"));
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook_tabs), client_page, gtk_label_new_with_mnemonic("client"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook_tabs), server_page, gtk_label_new_with_mnemonic("Server"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook_tabs), client_page, gtk_label_new_with_mnemonic("Client"));
 
 	gtk_container_add(GTK_CONTAINER(window), notebook_tabs);
 
