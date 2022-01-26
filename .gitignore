@@ -1,2 +1,5 @@
+*.o
+mindcontrol.conf
 mindcontrol
 mindcontrol.exe
+build/

@@ -30,6 +30,7 @@
 #include "mcerror.h"
 #include "utils.h"
 #include "clipboard.h"
+#include "input.h"
 #include "list.h"
 
 struct raw_key_event
@@ -40,19 +41,26 @@ struct raw_key_event
 	uint32_t action;
 };
 
+struct xdevice
+{
+	char name[128];
+	char path[256];
+	int eid;
+	int xid;
+	int fd;
+};
+
+static void load_input_data(void);
+
 static Display* display;
 static Window root_window;
 
 struct vec screen_size;
 
-static int mouse_fd;
-
-static int keyboard_fd;
-
 static unsigned char mousedev_imps_seq[] = { 0xf3, 200, 0xf3, 100, 0xf3, 80 };
 
-#define MOUSE_X_NAME "Logitech M720 Triathlon"
-#define KEYBOARD_X_NAME "Kingston HyperX Alloy FPS Pro Mechanical Gaming Keyboard"
+static struct xdevice keyboard = {0};
+static struct xdevice mouse = {0};
 
 void init_dragdrop(void) {}
 struct list* get_dragdrop_files(void) { return 0; }
@@ -63,19 +71,47 @@ void device_control_init(void)
 	display = XOpenDisplay(0);
 	root_window = XRootWindow(display, 0);
 
-	mouse_fd = open("/dev/input/mice", O_RDWR);
-	write(mouse_fd, mousedev_imps_seq, 6);
-	int flags = fcntl(mouse_fd, F_GETFL, 0);
-	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
-
-//    char keyboard_event_path[1024] = {0};
-//    load_shell_command("/dev/input/event", keyboard_event_path, sizeof(keyboard_event_path));
-	keyboard_fd = open("/dev/input/event2", O_RDONLY | O_NONBLOCK);
-
-	flags = fcntl(mouse_fd, F_GETFL, 0);
-	fcntl(mouse_fd, F_SETFL, flags | O_NONBLOCK);
-
 	screen_size = device_control_get_screen_size();
+
+	load_input_data();
+
+	mouse.fd = open(mouse.path, O_RDWR);
+	write(mouse.fd, mousedev_imps_seq, 6);
+	int flags = fcntl(mouse.fd, F_GETFL, 0);
+	fcntl(mouse.fd, F_SETFL, flags | O_NONBLOCK);
+
+	keyboard.fd = open(keyboard.path, O_RDONLY | O_NONBLOCK);
+	flags = fcntl(keyboard.fd, F_GETFL, 0);
+	fcntl(keyboard.fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+static void load_input_data(void)
+{
+	get_keyboard_name(keyboard.name);
+	get_keyboard_input_path(keyboard.path);
+	keyboard.eid = get_keyboard_event();
+
+	char keyboard_xid_buffer[128] = {0};
+	load_formatted_shell_command(
+		"xinput | grep \"%s\" | grep -o \"id=[0-9]*\\s\" | cut -c 4-",
+		keyboard_xid_buffer,
+		sizeof(keyboard_xid_buffer),
+		keyboard.name
+	);
+	keyboard.xid = atoi(keyboard_xid_buffer);
+
+	get_mouse_name(mouse.name);
+	get_mouse_input_path(mouse.path);
+	mouse.eid = get_mouse_event();
+
+	char mouse_xid_buffer[128] = {0};
+	load_formatted_shell_command(
+		"xinput | grep \"%s\" | grep -o \"id=[0-9]*\\s\" | cut -c 4-",
+		mouse_xid_buffer,
+		sizeof(mouse_xid_buffer),
+		mouse.name
+	);
+	mouse.xid = atoi(mouse_xid_buffer);
 }
 
 char* device_control_get_hostname(void)
@@ -107,7 +143,6 @@ char* device_control_get_hostname(void)
 //    return ip_out;
 //}
 
-//char* device_control_get_ip_by_hostname(void)
 char* device_control_get_ip(void)
 {
 	static char* ip_out = 0;
@@ -142,18 +177,20 @@ struct vec device_control_get_screen_size(void)
 
 void device_control_disable_input(void)
 {
-	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {} && \
-					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput disable {}", "r");
+	char buffer[1024];
+	sprintf(buffer, "xinput disable %d && xinput disable %d", mouse.xid, keyboard.xid);
+	FILE* fp = popen(buffer, "r");
 	pclose(fp);
 	device_control_hide_cursor();
 }
 
 void device_control_enable_input(void)
 {
-	FILE* fp = popen("xinput | grep '" KEYBOARD_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {} && \
-					  xinput | grep '" MOUSE_X_NAME "' | grep -o 'id=[0-9]\\?[0-9]' | sed 's/id=//g' | xargs -I{} xinput enable {}", "r");
+	char buffer[1024];
+	sprintf(buffer, "xinput enable %d && xinput enable %d", mouse.xid, keyboard.xid);
+	FILE* fp = popen(buffer, "r");
 	pclose(fp);
-	device_control_show_cursor();
+	device_control_hide_cursor();
 }
 
 void device_control_cursor_move(int x, int y)
@@ -267,19 +304,19 @@ struct vec device_control_cursor_on_move_get_relative(void)
 void device_control_keyboard_flush(void)
 {
 	char buffer[128];
-	while (read(keyboard_fd, buffer, sizeof(buffer)) > 0);
+	while (read(keyboard.fd, buffer, sizeof(buffer)) > 0);
 }
 
 void device_control_mouse_flush(void)
 {
 	char buffer[128];
-	while (read(mouse_fd, buffer, sizeof(buffer)) > 0);
+	while (read(mouse.fd, buffer, sizeof(buffer)) > 0);
 }
 
 struct mouse_state device_control_get_mouse_state(void)
 {
 	unsigned char mice_data[4];
-	if (read(mouse_fd, mice_data, 4) == -1)
+	if (read(mouse.fd, mice_data, 4) == -1)
 		return (struct mouse_state){0};
 	return (struct mouse_state){
 		.ready=true,
@@ -297,7 +334,7 @@ struct key_event device_control_get_keyboard_event(void)
 	static uint16_t lkey = 0;
 
 	struct raw_key_event ev = {0};
-	read(keyboard_fd, &ev, sizeof(ev));
+	read(keyboard.fd, &ev, sizeof(ev));
 
 	ev.key = key_code_to_generic_code(ev.key);
 

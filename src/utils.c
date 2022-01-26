@@ -2,7 +2,7 @@
 
 #include <string.h>
 #include <stddef.h>
-
+#include <stdarg.h>
 
 char* strrstr(char* str, char* chrs)
 {
@@ -64,4 +64,18 @@ void load_shell_command(char* command, char* buffer, int length)
 	if (buffer[out_length-1] == '\n')
 		buffer[out_length-1] = 0;
 	pclose(fp);
+}
+
+void load_formatted_shell_command(char* fmt, char* output_buffer, int output_buffer_length, ...)
+{
+	char buffer[2048];
+
+	va_list args;
+	va_start(args, output_buffer_length);
+
+	vsprintf(buffer, fmt, args);
+
+	va_end(args);
+
+	load_shell_command(buffer, output_buffer, output_buffer_length);
 }

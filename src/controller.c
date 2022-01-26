@@ -63,6 +63,11 @@ char* transfer_client_to_server(struct client* client, char* filepath, long file
 	return tmp_filepath;
 }
 
+void controller_set_state(state_t state)
+{
+	control_state.state = state;
+}
+
 struct client* get_client(void)
 {
 	int sck = dsocket_tcp_server_listen(&server);
@@ -89,26 +94,67 @@ static void _send_command(char* fmt, ...)
 	if (active_client->sck != -1) dsocket_tcp_server_send(server, active_client->sck, buffer, strlen(buffer));
 }
 
-void controller_set_state(state_t state)
+static void interrupt_command(char* data)
 {
-	control_state.state = state;
+	switch (COMMAND(data))
+	{
+		case COMMAND_VALUE_TRANSFER_FILE:
+		{
+			char filename[8192];
+			data_get_string(&data, filename);
+			data -= 3;
+			printf("%s\n", data);
+			long file_length;
+			data_get_value(&data, "%ld", &file_length);
+			printf("%s : %ld\n", filename, file_length);
+			char* tmp_filepath = transfer_client_to_server(active_client, filename, file_length);
+			set_dragdrop_files(tmp_filepath);
+		} break;
+		case COMMAND_VALUE_PING:
+		{
+			printf("PING: %llu\n", (unsigned long long)(time(0) - ping_start));
+		} break;
+		case COMMAND_VALUE_NEXT_SCREEN:
+		{
+			int screen_direction;
+			int x;
+			int y;
+			data_get_value(&data, "%d %d %d", &screen_direction, &x, &y);
+			y = UNSCALE_Y(y);
+			x = UNSCALE_X(x);
+			struct client* next_client = client_get_client_in_direction(active_client, screen_direction);
+			if (next_client == 0) break;
+			else if (edge_hit_is_dead_corner((struct vec){x, y}, active_client->dead_corners))
+				break;
+			else if (next_client == server_client)
+			{
+				control_state.y = y;
+				control_state.x = x;
+				control_state.edge_from = screen_direction;
+				control_state.state = CONTROL_STATE_SWITCH_TO_MAIN;
+				active_client = next_client;
+				break;
+			}
+			else if (next_client)
+			{
+				control_state.state = CONTROL_STATE_CLIENT;
+				send_command(COMMAND_CURSOR_TO, "%d %d", SCALE_X(screen_size.x/2), SCALE_Y(screen_size.y/2));
+				active_client = next_client;
+
+				struct vec edge_pos = get_scaled_vec_close_to_edge((struct vec){x, y}, other_edge(screen_direction));
+				send_command(COMMAND_CURSOR_TO, "%d %d", edge_pos.x, edge_pos.y);
+				break;
+			}
+		} break;
+	}
 }
 
-struct client* client_get_client_in_direction(struct client* client, int edge)
+static void deactivate_client(void)
 {
-	if (edge & EDGE_RIGHT)
-		if (client->right) return client->right;
-
-	if (edge & EDGE_LEFT)
-		if (client->left) return client->left;
-
-	if (edge & EDGE_BOTTOM)
-		if (client->down) return client->down;
-
-	if (edge & EDGE_TOP)
-		if (client->up) return client->up;
-
-	return 0;
+	active_client->sck = -1;
+	active_client->active = false;
+	control_state.state = CONTROL_STATE_SWITCH_TO_MAIN;
+	active_client = server_client;
 }
 
 CREATE_THREAD(controller_receive, void*, _, {
@@ -126,66 +172,14 @@ CREATE_THREAD(controller_receive, void*, _, {
 		int bytes_read = dsocket_tcp_server_receive(server, active_client->sck, buffer, sizeof(buffer));
 		if (bytes_read == 0)
 		{
-			active_client->sck = -1;
-			active_client->active = false;
-			control_state.state = CONTROL_STATE_SWITCH_TO_MAIN;
-			active_client = server_client;
+			deactivate_client();
 			continue;
 		}
 		else if (bytes_read < 0) continue;
 
 		char* data = extract_command(buffer);
-		do
-		{
-			if (IS_COMMAND(COMMAND_TRANSFER_FILE, data))
-			{
-				char filename[8192];
-				data_get_string(&data, filename);
-				data -= 3;
-				printf("%s\n", data);
-				long file_length;
-				data_get_value(&data, "%ld", &file_length);
-				printf("%s : %ld\n", filename, file_length);
-				char* tmp_filepath = transfer_client_to_server(active_client, filename, file_length);
-				set_dragdrop_files(tmp_filepath);
-			}
-			else if (IS_COMMAND(COMMAND_PING, data))
-			{
-				printf("PING: %llu\n", (unsigned long long)(time(0) - ping_start));
-			}
-			else if (IS_COMMAND(COMMAND_NEXT_SCREEN, data))
-			{
-				int screen_direction;
-				int x;
-				int y;
-				data_get_value(&data, "%d %d %d", &screen_direction, &x, &y);
-				y = UNSCALE_Y(y);
-				x = UNSCALE_X(x);
-				struct client* next_client = client_get_client_in_direction(active_client, screen_direction);
-				if (next_client == 0) continue;
-				else if (edge_hit_is_dead_corner((struct vec){x, y}, active_client->dead_corners))
-					continue;
-				else if (next_client == server_client)
-				{
-					control_state.y = y;
-					control_state.x = x;
-					control_state.edge_from = screen_direction;
-					control_state.state = CONTROL_STATE_SWITCH_TO_MAIN;
-					active_client = next_client;
-					break;
-				}
-				else if (next_client)
-				{
-					control_state.state = CONTROL_STATE_CLIENT;
-					send_command(COMMAND_CURSOR_TO, "%d %d", SCALE_X(screen_size.x/2), SCALE_Y(screen_size.y/2));
-					active_client = next_client;
-
-					struct vec edge_pos = get_scaled_vec_close_to_edge((struct vec){x, y}, other_edge(screen_direction));
-					send_command(COMMAND_CURSOR_TO, "%d %d", edge_pos.x, edge_pos.y);
-					break;
-				}
-			}
-		} while ((data = extract_command(0)));
+		do interrupt_command(data);
+		while ((data = extract_command(0)));
 	}
 })
 
@@ -228,7 +222,7 @@ static void switch_to_client_on_edge(int edge_hit)
 	device_control_mouse_flush();
 }
 
-static void test_edge_hit(void)
+static void switch_client_if_edge_hit(void)
 {
 	struct vec pos = device_control_cursor_get();
 	int edge_hit = get_edge_hit(pos);
@@ -308,7 +302,7 @@ void controller_main(int port)
 		else if (control_state.state == CONTROL_STATE_SWITCH_TO_MAIN)
 			switch_state_to_main();
 		else if (control_state.state == CONTROL_STATE_MAIN)
-			test_edge_hit();
+			switch_client_if_edge_hit();
 		else if (control_state.state == CONTROL_STATE_QUIT)
 		{
 			THREAD_KILL(&controller_receive_thread);

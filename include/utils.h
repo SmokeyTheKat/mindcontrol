@@ -40,7 +40,7 @@
 }
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \
-	DWORD WINAPI _name(LPVOID __varg) \
+	static DWORD WINAPI _name(LPVOID __varg) \
 	{ \
 		_arg_type _arg_name = *(_arg_type*)__varg; \
 		_code \
@@ -69,7 +69,7 @@
 }
 
 #define CREATE_THREAD(_name, _arg_type, _arg_name, _code) \
-	void* _name(void* __varg) \
+	static void* _name(void* __varg) \
 	{ \
 		_arg_type _arg_name = *(_arg_type*)__varg; \
 		_code \
@@ -83,5 +83,6 @@ char* extract_command(char* _data);
 void data_get_value(char** data, char* fmt, ...);
 void data_get_string(char** data, char* output);
 void load_shell_command(char* command, char* buffer, int length);
+void load_formatted_shell_command(char* fmt, char* output_buffer, int output_buffer_length, ...);
 
 #endif

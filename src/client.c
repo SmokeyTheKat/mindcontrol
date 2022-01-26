@@ -13,6 +13,23 @@
 #include "screen.h"
 #include "list.h"
 
+struct client* client_get_client_in_direction(struct client* client, int edge)
+{
+	if (edge & EDGE_RIGHT)
+		if (client->right) return client->right;
+
+	if (edge & EDGE_LEFT)
+		if (client->left) return client->left;
+
+	if (edge & EDGE_BOTTOM)
+		if (client->down) return client->down;
+
+	if (edge & EDGE_TOP)
+		if (client->up) return client->up;
+
+	return 0;
+}
+
 struct client* client_find_by_pos(struct client* client, int x, int y)
 {
 	struct client* current;

@@ -1,10 +1,5 @@
 #include "gui.h"
 
-#include <gtk/gtk.h>
-#include <glib.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "client.h"
 #include "controller.h"
 #include "device_control.h"
@@ -13,6 +8,12 @@
 #include "utils.h"
 #include "ddcSocket.h"
 #include "config.h"
+#include "pair.h"
+
+#include <gtk/gtk.h>
+#include <glib.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define LAST_WAS_SERVER 0
 #define LAST_WAS_CLIENT 1
@@ -23,11 +24,6 @@ struct gclient
 {
 	struct client client;
 	GtkWidget* button;
-};
-
-struct client_info
-{
-	char ip[16];
 };
 
 struct gclient root = {
@@ -399,7 +395,7 @@ static void create_screen(GtkWidget* widget, struct vec* pos)
 	new_screen->client.mouse_speed = 1;
 	new_screen->client.scroll_speed = 1;
 	new_screen->client.dead_corners.size = 4;
-	new_screen->button = gtk_button_new_with_image_from_file("./monitor.png", 80, 80);
+	new_screen->button = gtk_button_new_with_image_from_file("./resources/monitor.png", 80, 80);
 
 	g_signal_connect(new_screen->button, "clicked", G_CALLBACK(edit_client), new_screen);
 	gtk_grid_attach(GTK_GRID(client_grid), new_screen->button, new_screen->client.pos.x, new_screen->client.pos.y, 1, 1);
@@ -510,47 +506,10 @@ static void toggle_client(GtkWidget* widget, struct client_menu_options* menu_op
 	}
 }
 
-bool server_scan_end(void* _)
-{
-	gtk_widget_destroy(server_scan_dialog);
-	return false;
-}
-
-bool server_scan(void* _)
+bool close_server_scan_dialog(void* _)
 {
 	(void)_;
-	if (clients.data == 0)
-		clients = make_list(4, struct client_info);
-
-	char base_ip[16];
-	strcpy(base_ip, device_control_get_ip());
-	strrchr(base_ip, '.')[1] = 0;
-
-	for (int i = 0; i < 255; i++)
-	{
-		char ip[24] = {0};
-		sprintf(ip, "%s%d", base_ip, i);
-
-		printf("trying %s:%d\n", ip, 6969);
-
-		struct dsocket_tcp_client cli = make_dsocket_tcp_client(ip, 6969);
-		if (dsocket_tcp_client_connect(&cli) != 0)
-		{
-			close(cli.dscr);
-			continue;
-		}
-
-		struct client_info client_info;
-		strcpy(client_info.ip, ip);
-
-		list_push_back(&clients, client_info, struct client_info);
-
-		printf("found %s!\n", ip);
-
-		close(cli.dscr);
-	}
-
-	g_idle_add(server_scan_end, 0);
+	gtk_widget_destroy(server_scan_dialog);
 	return 0;
 }
 
@@ -578,7 +537,7 @@ static void display_server_scan(GtkWidget* widget, struct gclient* _)
 
 	gtk_widget_show_all(server_scan_dialog);
 
-	g_thread_new("thread", server_scan, 0);
+	controller_pair_with_clients(&clients);
 }
 
 static void save_config(GtkWidget* widget, struct menu_options* menu_options)
@@ -704,21 +663,6 @@ bool client_update_controller_ip(char* ip)
 	return false;
 }
 
-
-bool client_scan(void* _)
-{
-	(void)_;
-	struct dsocket_tcp_server srv = make_dsocket_tcp_server(6969);
-	dsocket_tcp_server_bind(&srv);
-	dsocket_tcp_server_start_listen(&srv);
-	while (1)
-	{
-		dsocket_tcp_server_listen(&srv);
-		char* ip = inet_ntoa(srv.server.sin_addr);
-		g_idle_add(client_update_controller_ip, ip);
-	}
-}
-
 static struct client_menu_options menu_options;
 
 static GtkWidget* generate_client_menu_controls(void)
@@ -773,7 +717,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 //    gtk_widget_set_hexpand(window, false);
 	gtk_container_set_border_width(GTK_CONTAINER(window), 10);
 
-	root.button = gtk_button_new_with_image_from_file("./controller.png", 80, 80);
+	root.button = gtk_button_new_with_image_from_file("./resources/controller.png", 80, 80);
 	g_signal_connect(root.button, "clicked", G_CALLBACK(edit_master), &root);
 
 	notebook_tabs = gtk_notebook_new();
@@ -791,24 +735,9 @@ static void activate(GtkApplication *app, gpointer user_data)
 	load_config();
 
 	if (user_type == 'a')
-	{
 		toggle_client(button_client_start, &menu_options);
-//        g_signal_new(
-//            "clicked",
-//            G_TYPE_OBJECT,
-//            G_SIGNAL_RUN_FIRST,
-//            0,
-//            NULL, NULL,
-//            g_cclosure_marshal_VOID__POINTER,
-//            G_TYPE_NONE,
-//            2,
-//            button_client_start,
-//            &menu_options
-//        );
-	}
 
-
-	g_thread_new("thread", client_scan, 0);
+	client_pair_with_controller();
 }
 
 

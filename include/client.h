@@ -37,8 +37,14 @@ void receiver_cleanup(void);
 struct client* client_find_by_pos(struct client* client, int x, int y);
 struct client* client_find_by_ip(struct client* client, char* ip);
 struct client* client_find_by_socket(struct client* client, int sck);
+struct client* client_get_client_in_direction(struct client* client, int edge);
 
 extern struct client* server_client;
+
+struct client_info
+{
+	char ip[16];
+};
 
 struct client
 {
