@@ -281,8 +281,6 @@ static void forward_input(void)
 
 void controller_main(int port)
 {
-	check_privledges();
-
 	printf("starting controller on port %d...\n", port);
 	active_client = server_client;
 
