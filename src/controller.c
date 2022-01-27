@@ -181,6 +181,7 @@ CREATE_THREAD(controller_receive, void*, _, {
 		do interrupt_command(data);
 		while ((data = extract_command(0)));
 	}
+	return 0;
 })
 
 CREATE_THREAD(accept_clients, void*, _, {
@@ -280,6 +281,8 @@ static void forward_input(void)
 
 void controller_main(int port)
 {
+	check_privledges();
+
 	printf("starting controller on port %d...\n", port);
 	active_client = server_client;
 

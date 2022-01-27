@@ -1,11 +1,5 @@
 #include "client.h"
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include "ddcSocket.h"
 #include "device_control.h"
 #include "commands.h"
@@ -15,6 +9,12 @@
 #include "screen.h"
 #include "list.h"
 #include "dragdrop.h"
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define send_command(command, format, ...) _send_command("[" command format "]", __VA_ARGS__)
 static void _send_command(char* fmt, ...);

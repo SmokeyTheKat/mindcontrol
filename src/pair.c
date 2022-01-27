@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <fcntl.h>
 #include <glib.h>
 
 static bool client_pair_thread(void* _)

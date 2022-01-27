@@ -102,6 +102,7 @@ static void load_input_data(void)
 
 	get_mouse_name(mouse.name);
 	get_mouse_input_path(mouse.path);
+	strcpy(mouse.path, "/dev/input/mice");
 	mouse.eid = get_mouse_event();
 
 	char mouse_xid_buffer[128] = {0};
@@ -190,7 +191,7 @@ void device_control_enable_input(void)
 	sprintf(buffer, "xinput enable %d && xinput enable %d", mouse.xid, keyboard.xid);
 	FILE* fp = popen(buffer, "r");
 	pclose(fp);
-	device_control_hide_cursor();
+	device_control_show_cursor();
 }
 
 void device_control_cursor_move(int x, int y)

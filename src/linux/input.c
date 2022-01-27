@@ -32,6 +32,8 @@ static void get_param_of(char* buffer_out, char* param, char* find, char* ending
 
 	ptr = strstr(data, find);
 
+	if (ptr == 0) return;
+
 	while (ptr != data)
 	{
 		if (!strncmp(ptr, "\n\n", 2))
@@ -39,7 +41,11 @@ static void get_param_of(char* buffer_out, char* param, char* find, char* ending
 		ptr--;
 	}
 
+	if (ptr == data) return;
+
 	ptr = strstr(ptr, param) + strlen(param);
+
+	if (ptr == data) return;
 
 	ptr = strtok(ptr, ending);
 
@@ -51,13 +57,24 @@ static void get_param_of(char* buffer_out, char* param, char* find, char* ending
 int get_mouse_event(void)
 {
 	char buffer[32];
-	get_param_of(buffer, "event", "EV=b", " \t\n\r\0");
+	get_param_of(buffer, "event", "mouse0", " \t\n\r\0");
 	return atoi(buffer);
 }
 
 void get_mouse_name(char* buffer_out)
 {
-	get_param_of(buffer_out, "Name=\"", "EV=b", "\"\0");
+	get_param_of(buffer_out, "Name=\"", "mouse0", "\"\0");
+}
+
+void get_mouse_input_path(char* buffer_out)
+{
+	buffer_out[0] = 0;
+
+	int event_num = get_mouse_event();
+	if (event_num == -1)
+		return;
+
+	sprintf(buffer_out, "%s%d", "/dev/input/event", event_num);
 }
 
 int get_keyboard_event(void)
@@ -81,17 +98,6 @@ void get_keyboard_input_path(char* buffer_out)
 		return;
 
 	sprintf(buffer_out, "/dev/input/event%d", event_num);
-}
-
-void get_mouse_input_path(char* buffer_out)
-{
-	buffer_out[0] = 0;
-
-	int event_num = get_mouse_event();
-	if (event_num == -1)
-		return;
-
-	sprintf(buffer_out, "%s%d", "/dev/input/event", event_num);
 }
 
 #endif
