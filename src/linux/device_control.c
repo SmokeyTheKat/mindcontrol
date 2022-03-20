@@ -93,7 +93,7 @@ static void load_input_data(void)
 
 	char keyboard_xid_buffer[128] = {0};
 	load_formatted_shell_command(
-		"xinput | grep \"%s\" | grep -o \"id=[0-9]*\\s\" | cut -c 4-",
+		"xinput | grep \"%s\" | tac | head -n1 | grep -o \"id=[0-9]*\\s\" | cut -c 4-",
 		keyboard_xid_buffer,
 		sizeof(keyboard_xid_buffer),
 		keyboard.name
@@ -179,7 +179,7 @@ struct vec device_control_get_screen_size(void)
 void device_control_disable_input(void)
 {
 	char buffer[1024];
-	sprintf(buffer, "xinput disable %d && xinput disable %d", mouse.xid, keyboard.xid);
+	sprintf(buffer, "xinput disable %d && for i in $(xinput list | grep '%s' | grep -o 'id=[0-9]*' | cut -c 4-); do xinput disable $i; done", mouse.xid, keyboard.name);
 	FILE* fp = popen(buffer, "r");
 	pclose(fp);
 	device_control_hide_cursor();
@@ -188,7 +188,7 @@ void device_control_disable_input(void)
 void device_control_enable_input(void)
 {
 	char buffer[1024];
-	sprintf(buffer, "xinput enable %d && xinput enable %d", mouse.xid, keyboard.xid);
+	sprintf(buffer, "xinput enable %d && for i in $(xinput list | grep '%s' | grep -o 'id=[0-9]*' | cut -c 4-); do xinput enable $i; done", mouse.xid, keyboard.name);
 	FILE* fp = popen(buffer, "r");
 	pclose(fp);
 	device_control_show_cursor();

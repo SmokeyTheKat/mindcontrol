@@ -31,5 +31,4 @@ install:
 	cp ./mindcontrol ${PREFIX}/bin/
 
 tc: all
-	tmf -s -i 192.168.1.41 -p 4321 ./mindcontrol
 	sudo ./mindcontrol t
