@@ -1,5 +1,5 @@
 *.o
-mindcontrol.conf
-mindcontrol
-mindcontrol.exe
+/mindcontrol.conf
+/mindcontrol
+/mindcontrol.exe
 build/
