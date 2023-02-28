@@ -1,14 +1,14 @@
-#include "gui.h"
+#include <mindcontrol/gui.h>
 
-#include "client.h"
-#include "controller.h"
-#include "device_control.h"
-#include "vec.h"
-#include "list.h"
-#include "utils.h"
-#include "ddcSocket.h"
-#include "config.h"
-#include "pair.h"
+#include <mindcontrol/client.h>
+#include <mindcontrol/controller.h>
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/vec.h>
+#include <mindcontrol/list.h>
+#include <mindcontrol/utils.h>
+#include <mindcontrol/dsocket.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/pair.h>
 
 #include <gtk/gtk.h>
 #include <glib.h>
@@ -540,6 +540,13 @@ static void display_server_scan(GtkWidget* widget, struct gclient* _)
 	controller_pair_with_clients(&clients);
 }
 
+static void clear_config(GtkWidget* widget, void* _)
+{
+	(void)_;
+	FILE* fp = fopen("./mindcontrol.conf", "w");
+	fclose(fp);
+}
+
 static void save_config(GtkWidget* widget, struct menu_options* menu_options)
 {
 	const struct vec master_pos = {100, 100};
@@ -630,11 +637,15 @@ static GtkWidget* generate_server_menu_controls(void)
 	GtkWidget* button_save_config = gtk_button_new_with_label("Save Config");
 	g_signal_connect(button_save_config, "clicked", G_CALLBACK(save_config), &menu_options);
 
+	GtkWidget* button_clear_config = gtk_button_new_with_label("Clear Config");
+	g_signal_connect(button_clear_config, "clicked", G_CALLBACK(clear_config), 0);
+
 	gtk_box_pack_start(GTK_BOX(menu), labeled_label_my_ip, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), labeled_label_my_hostname, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), labeled_entry_server_port, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), scan_start, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), button_save_config, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(menu), button_clear_config, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(menu), button_start, false, false, 0);
 
 	return menu;

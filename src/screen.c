@@ -1,9 +1,9 @@
-#include "screen.h"
+#include <mindcontrol/screen.h>
 
-#include "device_control.h"
-#include "client.h"
-#include "config.h"
-#include "utils.h"
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/client.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/utils.h>
 
 int get_edge_hit(struct vec pos)
 {

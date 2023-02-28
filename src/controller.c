@@ -1,19 +1,19 @@
-#include "controller.h"
+#include <mindcontrol/controller.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#include "device_control.h"
-#include "commands.h"
-#include "ddcSocket.h"
-#include "config.h"
-#include "screen.h"
-#include "client.h"
-#include "state.h"
-#include "gui.h"
-#include "utils.h"
-#include "dragdrop.h"
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/commands.h>
+#include <mindcontrol/dsocket.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/screen.h>
+#include <mindcontrol/client.h>
+#include <mindcontrol/state.h>
+#include <mindcontrol/gui.h>
+#include <mindcontrol/utils.h>
+#include <mindcontrol/dragdrop.h>
 
 #define MAX_VEL ((struct vec){30, 30})
 

@@ -1,9 +1,9 @@
-#include "pair.h"
+#include <mindcontrol/pair.h>
 
-#include "client.h"
-#include "device_control.h"
-#include "gui.h"
-#include "ddcSocket.h"
+#include <mindcontrol/client.h>
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/gui.h>
+#include <mindcontrol/dsocket.h>
 
 #include <stdio.h>
 #include <stdbool.h>

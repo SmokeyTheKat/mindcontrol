@@ -1,6 +1,6 @@
-#include "windows/wininfo.h"
-#include "device_control.h"
-#include "list.h"
+#include <mindcontrol/windows/wininfo.h>
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/list.h>
 
 #ifdef __WIN64
 

@@ -1,4 +1,4 @@
-#include "device_control.h"
+#include <mindcontrol/device_control.h>
 
 #ifdef __unix__
 
@@ -27,11 +27,11 @@
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/XInput2.h>
 
-#include "mcerror.h"
-#include "utils.h"
-#include "clipboard.h"
-#include "input.h"
-#include "list.h"
+#include <mindcontrol/mcerror.h>
+#include <mindcontrol/utils.h>
+#include <mindcontrol/clipboard.h>
+#include <mindcontrol/input.h>
+#include <mindcontrol/list.h>
 
 struct raw_key_event
 {

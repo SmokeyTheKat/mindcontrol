@@ -2,16 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "vec.h"
-#include "device_control.h"
-#include "controller.h"
-#include "client.h"
-#include "config.h"
-#include "gui.h"
-#include "dragdrop.h"
+#include <mindcontrol/vec.h>
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/controller.h>
+#include <mindcontrol/client.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/gui.h>
+#include <mindcontrol/dragdrop.h>
 
 #ifdef _WIN64
-#include "windows/wininfo.h"
+#include <mindcontrol/windows/wininfo.h>
 HINSTANCE hinstance;
 int WINAPI WinMain(HINSTANCE _hinstance,
 				   HINSTANCE hprev_instance,

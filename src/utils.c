@@ -1,4 +1,4 @@
-#include "utils.h"
+#include <mindcontrol/utils.h>
 
 #include <string.h>
 #include <stddef.h>

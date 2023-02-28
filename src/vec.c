@@ -1,6 +1,6 @@
-#include "vec.h"
+#include <mindcontrol/vec.h>
 
-#include "utils.h"
+#include <mindcontrol/utils.h>
 
 bool vec_compare(struct vec a, struct vec b)
 {

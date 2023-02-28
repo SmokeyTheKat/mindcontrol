@@ -1,4 +1,4 @@
-#include "clipboard.h"
+#include <mindcontrol/clipboard.h>
 
 #ifdef __unix__
 
@@ -12,8 +12,8 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#include "utils.h"
-#include "state.h"
+#include <mindcontrol/utils.h>
+#include <mindcontrol/state.h>
 
 static void clipboard_set_x_data(void);
 static void clipboard_load_clipboard_buffer(void);

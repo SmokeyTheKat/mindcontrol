@@ -1,4 +1,4 @@
-#include "input.h"
+#include <mindcontrol/input.h>
 
 #ifdef __unix__
 

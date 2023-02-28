@@ -1,9 +1,9 @@
-#include "dragdrop.h"
+#include <mindcontrol/dragdrop.h>
 
 #include <gtk/gtk.h>
 #include <glib.h>
 
-#include "device_control.h"
+#include <mindcontrol/device_control.h>
 
 #define TYPE "text/uri-list"
 

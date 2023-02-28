@@ -1,4 +1,4 @@
-#include "list.h"
+#include <mindcontrol/list.h>
 
 intmax_t __list_index_of(struct list* list, void* find, intmax_t type_size)
 {

@@ -1,4 +1,4 @@
-#include "ddcSocket.h"
+#include <mindcontrol/dsocket.h>
 
 #ifdef __unix__
 

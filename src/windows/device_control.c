@@ -1,4 +1,4 @@
-#include "device_control.h"
+#include <mindcontrol/device_control.h>
 
 #ifdef _WIN64
 
@@ -6,10 +6,10 @@
 #include <winuser.h>
 #include <pthread.h>
 
-#include "dragdrop.h"
-#include "ddcSocket.h"
-#include "config.h"
-#include "mcerror.h"
+#include <mindcontrol/dragdrop.h>
+#include <mindcontrol/dsocket.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/mcerror.h>
 
 struct vec screen_size;
 

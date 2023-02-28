@@ -1,14 +1,14 @@
-#include "client.h"
+#include <mindcontrol/client.h>
 
-#include "ddcSocket.h"
-#include "device_control.h"
-#include "commands.h"
-#include "vec.h"
-#include "utils.h"
-#include "config.h"
-#include "screen.h"
-#include "list.h"
-#include "dragdrop.h"
+#include <mindcontrol/dsocket.h>
+#include <mindcontrol/device_control.h>
+#include <mindcontrol/commands.h>
+#include <mindcontrol/vec.h>
+#include <mindcontrol/utils.h>
+#include <mindcontrol/config.h>
+#include <mindcontrol/screen.h>
+#include <mindcontrol/list.h>
+#include <mindcontrol/dragdrop.h>
 
 #include <stdio.h>
 #include <stdbool.h>
