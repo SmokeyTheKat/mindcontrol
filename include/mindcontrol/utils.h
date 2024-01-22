@@ -5,10 +5,12 @@
 #include <stdio.h>
 
 #define IS_COMMAND(com, dat) (*(int*)(com) == *(int*)(dat))
-#define UNSCALE_X(_x) ((_x) * screen_size.x / SCREEN_SCALE)
-#define UNSCALE_Y(_y) ((_y) * screen_size.y / SCREEN_SCALE)
-#define SCALE_X(_x) ((_x) * SCREEN_SCALE / screen_size.x)
-#define SCALE_Y(_y) ((_y) * SCREEN_SCALE / screen_size.y)
+#define UNSCALE_X(_x) ((_x) * g_screen_size.x / SCREEN_SCALE)
+#define UNSCALE_Y(_y) ((_y) * g_screen_size.y / SCREEN_SCALE)
+#define SCALE_X(_x) ((_x) * SCREEN_SCALE / g_screen_size.x)
+#define SCALE_Y(_y) ((_y) * SCREEN_SCALE / g_screen_size.y)
+
+#define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 #ifndef ABS
 	#define ABS(v) (((v) < 0) ? (-v) : (v))
@@ -53,8 +55,16 @@
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define SLEEP(_t) usleep((_t)*1000)
+#define GET_MILLS() _get_mills()
+
+static inline long long _get_mills(void) {
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	return now.tv_sec * 1000 + now.tv_usec / 1000;
+}
 
 #define THREAD pthread_t
 

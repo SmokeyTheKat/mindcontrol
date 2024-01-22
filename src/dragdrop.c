@@ -50,7 +50,7 @@ static bool activate(char* filename)
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
 	gtk_widget_set_hexpand(window, false);
 
-	struct vec pos = device_control_cursor_get();
+	struct vec pos = device_control_mouse_get_position();
 	gtk_window_move(GTK_WINDOW(window), pos.x, pos.y);
 
 //    g_signal_connect(window, "button-press-event", G_CALLBACK(drag_start), 0);

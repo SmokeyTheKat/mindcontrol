@@ -4,7 +4,9 @@
 #include <mindcontrol/utils.h>
 #include <mindcontrol/config.h>
 
-typedef volatile unsigned char state_t;
+#include <stdatomic.h>
+
+typedef volatile atomic_int state_t;
 #define data_state(data) volatile struct {state_t state; volatile struct {data;};}
 
 #define STATE_LOW 0

@@ -13,12 +13,14 @@
 int get_edge_hit(struct vec pos);
 int get_scaled_x_by_edge(int edge);
 int get_scaled_y_by_edge(int edge);
-struct vec get_vec_close_to_edge(struct vec pos, int edge);
-struct vec get_scaled_vec_close_to_edge(struct vec pos, int edge);
+struct vec get_vec_close_to_edge(struct vec pos, int edge, int dist);
+struct vec get_scaled_vec_close_to_edge(struct vec pos, int edge, int dist);
 int get_scaled_pos_on_edge(int edge, struct vec pos);
 struct vec get_vec_at_edge_pos(int edge, int edge_pos);
 struct vec get_unscaled_vec_at_edge_pos(int edge, int edge_pos);
 bool edge_hit_is_dead_corner(struct vec pos, struct dead_corners dc);
+struct vec screen_scale_vec(struct vec vec);
+struct vec screen_unscale_vec(struct vec vec);
 int other_edge(int edge);
 
 

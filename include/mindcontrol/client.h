@@ -41,13 +41,11 @@ struct client* client_get_client_in_direction(struct client* client, int edge);
 
 extern struct client* server_client;
 
-struct client_info
-{
+struct client_info {
 	char ip[16];
 };
 
-struct client
-{
+struct client {
 	bool active;
 	char ip[16];
 	struct vec pos;
@@ -56,8 +54,7 @@ struct client
 	float mouse_speed;
 	int scroll_speed;
 
-	struct dead_corners
-	{
+	struct dead_corners {
 		int top_left;
 		int top_right;
 		int bottom_left;
@@ -65,10 +62,8 @@ struct client
 		int size;
 	} dead_corners;
 
-	union
-	{
-		struct
-		{
+	union {
+		struct {
 			struct client* up;
 			struct client* down;
 			struct client* left;

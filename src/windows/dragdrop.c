@@ -129,35 +129,13 @@ bool processEvents(HWND window)
 	return running;
 }
 
-void cursor_left_down(void)
-{
-	INPUT ip = {0};
-	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
-	ip.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
-	SendInput(1, &ip, sizeof(ip));
-}
-
-void cursor_left_up(void)
-{
-	INPUT ip = {0};
-	ip.type = INPUT_MOUSE;
-	ip.mi.mouseData = 0;
-	ip.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-	ip.mi.time = 0;
-	ip.ki.dwExtraInfo = (ULONG_PTR)&(long){0};
-	SendInput(1, &ip, sizeof(ip));
-}
-
 struct list* get_dragdrop_files(void)
 {
 	POINT pos;
 	GetCursorPos(&pos);
 	SetWindowPos(drop_window, HWND_TOPMOST, pos.x - 10, pos.y - 10, 20, 20, SWP_SHOWWINDOW);
 
-	cursor_left_up();
+	device_control_mouse_left_up();
 
 	running = true;
 	while (processEvents(drop_window));

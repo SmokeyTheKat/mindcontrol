@@ -1,39 +1,183 @@
 #ifndef __MINDCONTROL_COMMANDS_H__
 #define __MINDCONTROL_COMMANDS_H__
 
+#include <mindcontrol/vec.h>
+
 #include <stdint.h>
 
-#define COMMAND(com) (*(uint32_t*)com)
+#define COMMAND_QUEUE_MAX_LENGTH 32
 
-#define COMMAND_CURSOR_UPDATE "CURS"
-#define COMMAND_VALUE_CURSOR_UPDATE 0x53525543
-#define COMMAND_RETURN "RETN"
-#define COMMAND_VALUE_RETURN 0x4e544552
-#define COMMAND_NEXT_SCREEN "NXSN"
-#define COMMAND_VALUE_NEXT_SCREEN 0x4e53584e
-#define COMMAND_CURSOR_TO "CURT"
-#define COMMAND_VALUE_CURSOR_TO 0x54525543
-#define COMMAND_SCROLL "SCRL"
-#define COMMAND_VALUE_SCROLL 0x4c524353
-#define COMMAND_LEFT_DOWN "LCKD"
-#define COMMAND_VALUE_LEFT_DOWN 0x444b434c
-#define COMMAND_LEFT_UP "LCKU"
-#define COMMAND_VALUE_LEFT_UP 0x554b434c
-#define COMMAND_RIGHT_DOWN "RCKD"
-#define COMMAND_VALUE_RIGHT_DOWN 0x444b4352
-#define COMMAND_RIGHT_UP "RCKU"
-#define COMMAND_VALUE_RIGHT_UP 0x554b4352
-#define COMMAND_KEYPRESS "KPRS"
-#define COMMAND_VALUE_KEYPRESS 0x5352504b
-#define COMMAND_KEYRELEASE "KRLS"
-#define COMMAND_VALUE_KEYRELEASE 0x534c524b
-#define COMMAND_UPDATE_CLIPBOARD "UCLP"
-#define COMMAND_VALUE_UPDATE_CLIPBOARD 0x504c4355
-#define COMMAND_GO_BY_EDGE_AT "GBEA"
-#define COMMAND_VALUE_GO_BY_EDGE_AT 0x41454247
-#define COMMAND_TRANSFER_FILE "TRFL"
-#define COMMAND_VALUE_TRANSFER_FILE 0x4c465254
-#define COMMAND_PING "PING"
-#define COMMAND_VALUE_PING 0x474e4950
+enum {
+	CMD_NONE = 0,
+	CMD_CURSOR_MOVE,
+	CMD_NEXT_SCREEN,
+	CMD_CURSOR_TO,
+	CMD_SCROLL,
+	CMD_LEFT_DOWN,
+	CMD_LEFT_UP,
+	CMD_RIGHT_DOWN,
+	CMD_RIGHT_UP,
+	CMD_MIDDLE_DOWN,
+	CMD_MIDDLE_UP,
+	CMD_KEY_PRESS,
+	CMD_KEY_RELEASE,
+	CMD_GO_BY_EDGE_AT,
+	CMD_TRANSFER_FILE,
+	CMD_PING,
+	CMD_CLIPBOARD,
+};
+
+struct command_mouse_move {
+	uint8_t length;
+	uint8_t type;
+	struct vec d;
+};
+
+struct command_next_screen {
+	uint8_t length;
+	uint8_t type;
+	int edge;
+	struct vec pos;
+};
+
+struct command_mouse_to {
+	uint8_t length;
+	uint8_t type;
+	struct vec pos;
+};
+
+struct command_scroll {
+	uint8_t length;
+	uint8_t type;
+	int scroll, multiplyer;
+};
+
+struct command_left_down {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_left_up {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_right_down {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_right_up {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_middle_down {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_middle_up {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_key_press {
+	uint8_t length;
+	uint8_t type;
+	int key;
+};
+
+struct command_key_release {
+	uint8_t length;
+	uint8_t type;
+	int key;
+};
+
+struct command_update_clipboard {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_go_by_edge_at {
+	uint8_t length;
+	uint8_t type;
+	int edge;
+	int edge_pos;
+};
+
+struct command_transfer_file {
+	uint8_t length;
+	uint8_t type;
+	int file_length;
+};
+
+struct command_ping {
+	uint8_t length;
+	uint8_t type;
+};
+
+struct command_clipboard {
+	uint8_t length;
+	uint8_t type;
+	int payload_length;
+	char* payload;
+};
+
+struct command {
+	union {
+		struct {
+			uint8_t length;
+			uint8_t type;
+		};
+		struct command_mouse_move mouse_move;
+		struct command_next_screen next_screen;
+		struct command_mouse_to mouse_to;
+		struct command_scroll scroll;
+		struct command_left_down left_down;
+		struct command_left_up left_up;
+		struct command_right_down right_down;
+		struct command_right_up right_up;
+		struct command_middle_down middle_down;
+		struct command_middle_up middle_up;
+		struct command_key_press keypress;
+		struct command_key_release keyrelease;
+		struct command_update_clipboard update_clipboard;
+		struct command_go_by_edge_at go_by_edge_at;
+		struct command_transfer_file transfer_file;
+		struct command_ping ping;
+		struct command_clipboard clipboard;
+	};
+};
+
+void command_queue_flush(void);
+void command_queue_remove(int idx);
+bool command_queue_reduce(struct command* command);
+
+void stage_command(struct command* command);
+void stage_mouse_to_command(struct vec pos);
+void queue_mouse_move_command(struct vec d);
+void queue_scroll_command(int scroll, int multiplyer);
+void queue_left_down_command(void);
+void queue_left_up_command(void);
+void queue_right_down_command(void);
+void queue_right_up_command(void);
+void queue_middle_down_command(void);
+void queue_middle_up_command(void);
+void queue_key_press_command(int key);
+void queue_key_release_command(int key);
+void stage_next_screen_command(int edge, struct vec pos);
+void stage_ping_command(void);
+void stage_clipboard_command(char* text);
+void stage_go_by_edge_at_command(int edge, int edge_pos);
+
+void parse_command(const char* data, int length);
+
+typedef void(*command_callback_t)(struct command*);
+typedef void(*command_send_callback_t)(char*, int);
+extern command_callback_t command_execute_callback;
+extern command_send_callback_t command_send_callback;
+extern struct command command_queue[COMMAND_QUEUE_MAX_LENGTH];
+extern int command_queue_length;
 
 #endif

@@ -20,8 +20,7 @@
 
 static void create_screen(GtkWidget* widget, struct vec* pos);
 
-struct gclient 
-{
+struct gclient  {
 	struct client client;
 	GtkWidget* button;
 };
@@ -51,8 +50,7 @@ static GtkWidget* server_scan_dialog;
 static GtkWidget* notebook_tabs;
 static GtkWidget* button_client_start;
 
-static GtkPaned* gtk_labeled_new_with_widget(char* label, GtkWidget* widget)
-{
+static GtkPaned* gtk_labeled_new_with_widget(char* label, GtkWidget* widget) {
 	GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_pack_start(GTK_BOX(box), gtk_label_new_with_mnemonic(label), false, false, 0);
 	gtk_box_pack_start(GTK_BOX(box), widget, true, true, 0);
@@ -60,11 +58,15 @@ static GtkPaned* gtk_labeled_new_with_widget(char* label, GtkWidget* widget)
 	return box;
 }
 
-static GtkButton* gtk_button_new_with_image_from_file(char* file_path, int width, int height)
-{
+static GtkButton* gtk_button_new_with_image_from_file(char* file_path, int width, int height) {
 	GtkWidget* button = gtk_button_new();
 
-	GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file_at_scale(file_path, width, height, false, 0);
+	GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file_at_scale(
+		file_path,
+		width, height,
+		false,
+		0
+	);
 
 	GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
 
@@ -73,49 +75,50 @@ static GtkButton* gtk_button_new_with_image_from_file(char* file_path, int width
 	return button;
 }
 
-bool screen_add_exists(struct gclient* orig_screen, struct gclient* screen, int x, int y)
-{
+bool screen_add_exists(struct gclient* orig_screen, struct gclient* screen, int x, int y) {
 	struct list seen = make_list(100, struct gclient*);
 	struct list queue = make_list(100, struct gclient*);
 	list_push_back(&queue, screen, struct gclient*);
 	list_push_back(&seen, screen, struct gclient*);
-	while (queue.length != 0)
-	{
+	while (queue.length != 0) {
 		struct gclient* current = list_first(&queue, struct gclient*);
 		list_remove(&queue, 0, struct gclient*);
 
 		if (
-				(
-					(current->client.pos.x + 1 == x && current->client.pos.y     == y) ||
-					(current->client.pos.x - 1 == x && current->client.pos.y     == y) ||
-					(current->client.pos.x     == x && current->client.pos.y + 1 == y) ||
-					(current->client.pos.x     == x && current->client.pos.y - 1 == y)
-				) &&
-				current != orig_screen
-			)
-		{
+			(
+				(current->client.pos.x + 1 == x && current->client.pos.y == y) ||
+				(current->client.pos.x - 1 == x && current->client.pos.y == y) ||
+				(current->client.pos.x == x && current->client.pos.y + 1 == y) ||
+				(current->client.pos.x == x && current->client.pos.y - 1 == y)
+			) &&
+			current != orig_screen
+		) {
 			free_list(&seen, struct gclient*);
 			free_list(&queue, struct gclient*);
 			return true;
 		}
 
-		for (int j = 0; j < 4; j++)
-		{
-			if (current->client.directions[j] &&
-				list_index_of(&seen, current->client.directions[j], struct gclient*) == -1)
-			{
+		for (int j = 0; j < 4; j++) {
+			if (
+				current->client.directions[j] &&
+				list_index_of(
+					&seen,
+					current->client.directions[j],
+					struct gclient*
+				) == -1
+			) {
 				list_push_back(&queue, current->client.directions[j], struct client*);
 				list_push_back(&seen, current->client.directions[j], struct client*);
 			}
 		}
 	}
+
 	free_list(&seen, struct gclient*);
 	free_list(&queue, struct gclient*);
 	return false;
 }
 
-static void grid_add_new_screen_button(int x, int y)
-{
+static void grid_add_new_screen_button(int x, int y) {
 	GtkWidget* button = gtk_button_new_with_label("+");
 	struct vec* pos = malloc(sizeof(struct vec));
 	pos->x = x;
@@ -124,62 +127,106 @@ static void grid_add_new_screen_button(int x, int y)
 	gtk_grid_attach(GTK_GRID(client_grid), button, pos->x, pos->y, 1, 1);
 }
 
-static void screen_add_new_screen_buttons(struct gclient* screen)
-{
-	if (!screen->client.left && !screen_add_exists(screen, &root, screen->client.pos.x - 1, screen->client.pos.y))
-	{
-		grid_add_new_screen_button(screen->client.pos.x - 1, screen->client.pos.y);
+static void screen_add_new_screen_buttons(struct gclient* screen) {
+	if (
+		!screen->client.left &&
+		!screen_add_exists(
+			screen,
+			&root,
+			screen->client.pos.x - 1,
+			screen->client.pos.y
+		)
+	) {
+		grid_add_new_screen_button(
+			screen->client.pos.x - 1,
+			screen->client.pos.y
+		);
 	}
 
-	if (!screen->client.right && !screen_add_exists(screen, &root, screen->client.pos.x + 1, screen->client.pos.y))
-	{
-		grid_add_new_screen_button(screen->client.pos.x + 1, screen->client.pos.y);
+	if (
+		!screen->client.right &&
+		!screen_add_exists(
+			screen,
+			&root,
+			screen->client.pos.x + 1,
+			screen->client.pos.y
+		)
+	) {
+		grid_add_new_screen_button(
+			screen->client.pos.x + 1,
+			screen->client.pos.y
+		);
 	}
 
-	if (!screen->client.down && !screen_add_exists(screen, &root, screen->client.pos.x, screen->client.pos.y + 1))
-	{
-		grid_add_new_screen_button(screen->client.pos.x, screen->client.pos.y + 1);
+	if (
+		!screen->client.down &&
+		!screen_add_exists(
+			screen,
+			&root,
+			screen->client.pos.x,
+			screen->client.pos.y + 1
+		)
+	) {
+		grid_add_new_screen_button(
+			screen->client.pos.x,
+			screen->client.pos.y + 1
+		);
 	}
 
-	if (!screen->client.up && !screen_add_exists(screen, &root, screen->client.pos.x, screen->client.pos.y - 1))
-	{
-		grid_add_new_screen_button(screen->client.pos.x, screen->client.pos.y - 1);
+	if (    
+		!screen->client.up &&
+		!screen_add_exists(
+			screen,
+			&root,
+			screen->client.pos.x,
+			screen->client.pos.y - 1
+		)
+	) {
+		grid_add_new_screen_button(
+			screen->client.pos.x,
+			screen->client.pos.y - 1
+		);
 	}
 
 	gtk_widget_show_all(window);
 }
 
-static void screen_assign_neighbors(struct gclient* screen)
-{
-	struct gclient* try_left = client_find_by_pos(&root, screen->client.pos.x - 1, screen->client.pos.y);
-	struct gclient* try_right = client_find_by_pos(&root, screen->client.pos.x + 1, screen->client.pos.y);
-	struct gclient* try_up = client_find_by_pos(&root, screen->client.pos.x, screen->client.pos.y - 1);
-	struct gclient* try_down = client_find_by_pos(&root, screen->client.pos.x, screen->client.pos.y + 1);
+static void screen_assign_neighbors(struct gclient* screen) {
+	struct gclient* try_left = client_find_by_pos(
+		&root, screen->client.pos.x - 1, screen->client.pos.y
+	);
+	struct gclient* try_right = client_find_by_pos(
+		&root, screen->client.pos.x + 1, screen->client.pos.y
+	);
+	struct gclient* try_up = client_find_by_pos(
+		&root, screen->client.pos.x, screen->client.pos.y - 1
+	);
+	struct gclient* try_down = client_find_by_pos(
+		&root, screen->client.pos.x, screen->client.pos.y + 1
+	);
 
-	if (try_left)
-	{
+	if (try_left) {
 		try_left->client.right = screen;
 		screen->client.left = try_left;
 	}
-	if (try_right)
-	{
+
+	if (try_right) {
 		try_right->client.left = screen;
 		screen->client.right = try_right;
 	}
-	if (try_up)
-	{
+
+	if (try_up) {
 		try_up->client.down = screen;
 		screen->client.up = try_up;
 	}
-	if (try_down)
-	{
+
+	if (try_down) {
 		try_down->client.up = screen;
 		screen->client.down = try_down;
 	}
 }
 
-struct edit_client_data
-{
+struct edit_client_data {
 	struct gclient* screen;
 	GtkWidget* combo_box_text_ip;
 	GtkWidget* check_button_dc_top_left;
@@ -191,8 +238,7 @@ struct edit_client_data
 	GtkWidget* spin_button_scroll_speed;
 };
 
-static void edit_client_set_screen_data(GtkWidget* widget, gint response, struct edit_client_data* data)
-{
+static void edit_client_set_screen_data(GtkWidget* widget, gint response, struct edit_client_data* data) {
 	const char* ip = gtk_combo_box_text_get_active_text(data->combo_box_text_ip);
 	strcpy(data->screen->client.ip, ip);
 
@@ -209,14 +255,15 @@ static void edit_client_set_screen_data(GtkWidget* widget, gint response, struct
 	free(data);
 }
 
-static void edit_client(GtkWidget* widget, struct gclient* screen)
-{
-	GtkWidget* dialog = gtk_dialog_new_with_buttons("Get Text",
-										  GTK_WINDOW(window),
-										  GTK_DIALOG_MODAL,
-										  GTK_STOCK_OK,
-										  GTK_RESPONSE_OK,
-										  NULL);
+static void edit_client(GtkWidget* widget, struct gclient* screen) {
+	GtkWidget* dialog = gtk_dialog_new_with_buttons(
+		"Get Text",
+		GTK_WINDOW(window),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		NULL
+	);
 
 	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
@@ -226,8 +273,9 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 	edit_client_textbox = gtk_combo_box_text_new_with_entry();
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(edit_client_textbox), screen->client.ip);
 	gtk_combo_box_set_active(GTK_COMBO_BOX_TEXT(edit_client_textbox), 0);
-	for (list_iterate(&clients, i, struct client_info))
+	for (list_iterate(&clients, i, struct client_info)) {
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(edit_client_textbox), i->ip);
+	}
 
 	GtkWidget* labeled_client_ip = gtk_labeled_new_with_widget("ip: ", edit_client_textbox);
 
@@ -292,8 +340,7 @@ static void edit_client(GtkWidget* widget, struct gclient* screen)
 	g_signal_connect(GTK_DIALOG(dialog), "response", G_CALLBACK(edit_client_set_screen_data), client_data);
 }
 
-struct edit_master_data
-{
+struct edit_master_data {
 	struct gclient* screen;
 	GtkWidget* combo_box_text_ip;
 	GtkWidget* check_button_dc_top_left;
@@ -303,8 +350,7 @@ struct edit_master_data
 	GtkWidget* spin_button_dc_size;
 };
 
-static void edit_master_set_screen_data(GtkWidget* widget, gint response, struct edit_master_data* data)
-{
+static void edit_master_set_screen_data(GtkWidget* widget, gint response, struct edit_master_data* data) {
 	data->screen->client.dead_corners.top_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_left));
 	data->screen->client.dead_corners.top_right = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_top_right));
 	data->screen->client.dead_corners.bottom_left = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(data->check_button_dc_bottom_left));
@@ -315,14 +361,15 @@ static void edit_master_set_screen_data(GtkWidget* widget, gint response, struct
 	free(data);
 }
 
-static void edit_master(GtkWidget* widget, struct gclient* screen)
-{
-	GtkWidget* dialog = gtk_dialog_new_with_buttons("Get Text",
-										  GTK_WINDOW(window),
-										  GTK_DIALOG_MODAL,
-										  GTK_STOCK_OK,
-										  GTK_RESPONSE_OK,
-										  NULL);
+static void edit_master(GtkWidget* widget, struct gclient* screen) {
+	GtkWidget* dialog = gtk_dialog_new_with_buttons(
+		"Get Text",
+		GTK_WINDOW(window),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		NULL
+	);
 
 	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	GtkWidget* grid = gtk_grid_new();
@@ -388,8 +435,7 @@ static void edit_master(GtkWidget* widget, struct gclient* screen)
 	g_signal_connect(GTK_DIALOG(dialog), "response", G_CALLBACK(edit_master_set_screen_data), master_data);
 }
 
-static void create_screen(GtkWidget* widget, struct vec* pos)
-{
+static void create_screen(GtkWidget* widget, struct vec* pos) {
 	struct gclient* new_screen = calloc(sizeof(struct gclient), 1);
 	new_screen->client.pos = *pos;
 	new_screen->client.mouse_speed = 1;
@@ -408,8 +454,7 @@ static void create_screen(GtkWidget* widget, struct vec* pos)
 	gtk_widget_show_all(window);
 }
 
-static GtkWidget* generate_client_grid(void)
-{
+static GtkWidget* generate_client_grid(void) {
 	GtkWidget* grid = gtk_grid_new();
 
 	gtk_grid_set_row_homogeneous(GTK_GRID(grid), true);
@@ -423,23 +468,20 @@ static GtkWidget* generate_client_grid(void)
 THREAD instance_thread;
 bool instance_running = false;
 
-struct menu_options
-{
+struct menu_options {
 	int last;
 	GtkButton* button_start;
 	GtkEntry* entry_port;
 };
 
-struct client_menu_options
-{
+struct client_menu_options {
 	int last;
 	GtkButton* button_start;
 	GtkEntry* entry_port;
 	GtkEntry* entry_ip;
 };
 
-struct client_options
-{
+struct client_options {
 	char ip[16];
 	int port;
 };
@@ -454,22 +496,20 @@ CREATE_THREAD(run_client, struct client_options, options, {
 	return 0;
 })
 
-static void toggle_controller(GtkWidget* widget, struct menu_options* menu_options)
-{
+static void toggle_controller(GtkWidget* widget, struct menu_options* menu_options) {
 	static int* port = 0;
-	if (port == 0) port = malloc(sizeof(int));
+	if (port == 0) {
+		port = malloc(sizeof(int));
+	}
 
 	instance_running = !instance_running;
-	if (instance_running)
-	{
+	if (instance_running) {
 		gtk_button_set_label(menu_options->button_start, "Stop");
 
 		instance_thread = MAKE_THREAD();
 		*port = atoi(gtk_entry_get_text(menu_options->entry_port));
 		THREAD_CALL(&instance_thread, run_controller, port);
-	}
-	else
-	{
+	} else {
 		gtk_button_set_label(menu_options->button_start, "Start");
 
 		controller_set_state(CONTROL_STATE_QUIT);
@@ -479,50 +519,48 @@ static void toggle_controller(GtkWidget* widget, struct menu_options* menu_optio
 	}
 }
 
-static void toggle_client(GtkWidget* widget, struct client_menu_options* menu_options)
-{
+static void toggle_client(GtkWidget* widget, struct client_menu_options* menu_options) {
 	static struct client_options* client_options = 0;
-	if (client_options == 0) client_options = malloc(sizeof(struct client_options));
+	if (client_options == 0) {
+		client_options = malloc(sizeof(struct client_options));
+	}
 	strcpy(client_options->ip, gtk_entry_get_text(menu_options->entry_ip));
 	client_options->port = atoi(gtk_entry_get_text(menu_options->entry_port));
 
 	instance_running = !instance_running;
-	if (instance_running)
-	{
+	if (instance_running) {
 		gtk_button_set_label(menu_options->button_start, "Stop");
 
 		instance_thread = MAKE_THREAD();
 		THREAD_CALL(&instance_thread, run_client, client_options);
-	}
-	else
-	{
+	} else {
 		gtk_button_set_label(menu_options->button_start, "Start");
 
-		controller_set_state(CONTROL_STATE_QUIT);
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 100; i++) {
 			SLEEP(REST_TIME);
+		}
 		THREAD_KILL(&instance_thread);
 		receiver_cleanup();
 	}
 }
 
-bool close_server_scan_dialog(void* _)
-{
+bool close_server_scan_dialog(void* _) {
 	(void)_;
 	gtk_widget_destroy(server_scan_dialog);
 	return 0;
 }
 
-static void display_server_scan(GtkWidget* widget, struct gclient* _)
-{
+static void display_server_scan(GtkWidget* widget, struct gclient* _) {
 	(void)_;
 	printf("scanning for clients...\n");
-	server_scan_dialog = gtk_dialog_new_with_buttons("Get Text",
-										  GTK_WINDOW(window),
-										  GTK_DIALOG_MODAL,
-										  GTK_STOCK_OK,
-										  GTK_RESPONSE_OK,
-										  NULL);
+	server_scan_dialog = gtk_dialog_new_with_buttons(
+		"Get Text",
+		GTK_WINDOW(window),
+		GTK_DIALOG_MODAL,
+		GTK_STOCK_OK,
+		GTK_RESPONSE_OK,
+		NULL
+	);
 
 	GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(server_scan_dialog));
 
@@ -540,15 +578,12 @@ static void display_server_scan(GtkWidget* widget, struct gclient* _)
 	controller_pair_with_clients(&clients);
 }
 
-static void clear_config(GtkWidget* widget, void* _)
-{
+static void clear_config(GtkWidget* widget, void* _) {
 	(void)_;
-	FILE* fp = fopen("./mindcontrol.conf", "w");
-	fclose(fp);
+	fclose(fopen("./mindcontrol.conf", "w"));
 }
 
-static void save_config(GtkWidget* widget, struct menu_options* menu_options)
-{
+static void save_config(GtkWidget* widget, struct menu_options* menu_options) {
 	const struct vec master_pos = {100, 100};
 	FILE* fp = fopen("./mindcontrol.conf", "w");
 	int port = atoi(gtk_entry_get_text(menu_options->entry_port));
@@ -556,20 +591,27 @@ static void save_config(GtkWidget* widget, struct menu_options* menu_options)
 	fprintf(fp, "ip %s\n", gtk_entry_get_text(entry_server_ip));
 	fprintf(fp, "last %d\n", menu_options->last);
 	ITERATE_OVER_CLIENTS({
-		if (!vec_compare(current->pos, master_pos))
-			fprintf(fp, "display %d %d %s %d %d %d %d %d %f %d\n",
-					current->pos.x, current->pos.y, current->ip,
-					current->dead_corners.top_left, current->dead_corners.top_right,
-					current->dead_corners.bottom_left, current->dead_corners.bottom_right,
-					current->dead_corners.size,
-					current->mouse_speed,
-					current->scroll_speed);
+		if (!vec_compare(current->pos, master_pos)) {
+			fprintf(
+				fp,
+				"display %d %d %s %d %d %d %d %d %f %d\n",
+				current->pos.x,
+				current->pos.y,
+				current->ip,
+				current->dead_corners.top_left,
+				current->dead_corners.top_right,
+				current->dead_corners.bottom_left,
+				current->dead_corners.bottom_right,
+				current->dead_corners.size,
+				current->mouse_speed,
+				current->scroll_speed
+			);
+		}
 	});
 	fclose(fp);
 }
 
-static void load_config(void)
-{
+static void load_config(void) {
 	FILE* fp = fopen("./mindcontrol.conf", "r");
 	if (!fp) return;
 	char buffer[4096];
@@ -577,25 +619,33 @@ static void load_config(void)
 	int port;
 	char controller_ip[16];
 	int last;
-	while (fgets(buffer, sizeof(buffer), fp))
-	{
+	while (fgets(buffer, sizeof(buffer), fp)) {
 		int x, y;
 		struct dead_corners dc;
 		char ip[16];
 		float mouse_speed;
 		int scroll_speed;
-		if (!strncmp(buffer, "port", 4))
+		if (!strncmp(buffer, "port", 4)) {
 			sscanf(buffer, "port %d", &port);
-		else if (!strncmp(buffer, "ip", 2))
+		} else if (!strncmp(buffer, "ip", 2)) {
 			sscanf(buffer, "ip %s", controller_ip);
-		else if (!strncmp(buffer, "last", 4))
+		} else if (!strncmp(buffer, "last", 4)) {
 			sscanf(buffer, "last %d", &last);
-		else if (!strncmp(buffer, "display", 7))
-		{
-			sscanf(buffer, "display %d %d %s %d %d %d %d %d %f %d", &x, &y, ip,
-														   &dc.top_left, &dc.top_right,
-														   &dc.bottom_left, &dc.bottom_right,
-														   &dc.size, &mouse_speed, &scroll_speed);
+		} else if (!strncmp(buffer, "display", 7)) {
+			sscanf(
+				buffer,
+				"display %d %d %s %d %d %d %d %d %f %d",
+				&x,
+				&y,
+				ip,
+				&dc.top_left,
+				&dc.top_right,
+				&dc.bottom_left,
+				&dc.bottom_right,
+				&dc.size,
+				&mouse_speed,
+				&scroll_speed
+			);
 			struct vec pos = {x, y};
 			create_screen(gtk_grid_get_child_at(GTK_GRID(client_grid), x, y), &pos);
 			struct client* client = client_find_by_pos(server_client, x, y);
@@ -609,8 +659,7 @@ static void load_config(void)
 	gtk_notebook_set_current_page(notebook_tabs, last);
 }
 
-static GtkWidget* generate_server_menu_controls(void)
-{
+static GtkWidget* generate_server_menu_controls(void) {
 	GtkWidget* menu = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(menu), false);
 
@@ -651,8 +700,7 @@ static GtkWidget* generate_server_menu_controls(void)
 	return menu;
 }
 
-static GtkWidget* generate_server_page(void)
-{
+static GtkWidget* generate_server_page(void) {
 	client_grid = generate_client_grid();
 //    client_grid = generate_monitor_view();
 	screen_add_new_screen_buttons(&root);
@@ -666,8 +714,7 @@ static GtkWidget* generate_server_page(void)
 	return paned;
 }
 
-bool client_update_controller_ip(char* ip)
-{
+bool client_update_controller_ip(char* ip) {
 	gtk_entry_buffer_set_text(gtk_entry_get_buffer(entry_server_ip), ip, strlen(ip));
 	gtk_widget_destroy(client_scan_dialog);
 
@@ -676,8 +723,7 @@ bool client_update_controller_ip(char* ip)
 
 static struct client_menu_options menu_options;
 
-static GtkWidget* generate_client_menu_controls(void)
-{
+static GtkWidget* generate_client_menu_controls(void) {
 	GtkWidget* menu = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_box_set_homogeneous(GTK_BOX(menu), false);
 
@@ -715,13 +761,11 @@ static GtkWidget* generate_client_menu_controls(void)
 	return menu;
 }
 
-static GtkWidget* generate_client_page(void)
-{
+static GtkWidget* generate_client_page(void) {
 	return generate_client_menu_controls();
 }
 
-static void activate(GtkApplication *app, gpointer user_data)
-{
+static void activate(GtkApplication *app, gpointer user_data) {
 	window = gtk_application_window_new(app);
 	gtk_window_set_title(GTK_WINDOW(window), "mindcontrol");
 	gtk_window_set_resizable(GTK_WINDOW(window), false);
@@ -745,15 +789,59 @@ static void activate(GtkApplication *app, gpointer user_data)
 
 	load_config();
 
-	if (user_type == 'a')
+	if (user_type == 'a') {
 		toggle_client(button_client_start, &menu_options);
+	}
 
 	client_pair_with_controller();
 }
 
+static state_t getting_clipboard = STATE_LOW;
 
-int gui_main(void)
-{
+static gboolean clipboard_set_text(const char* text, void* _, void* __) {
+	GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	gtk_clipboard_set_text(clipboard, text, -1);
+	return false;
+}
+
+static gboolean clipboard_get_text(char* out, void* _, void* __) {
+//    printf("1111\n");
+//    GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+//    printf("2222\n");
+//    if (gtk_clipboard_wait_for_text(clipboard) != NULL) {
+//        printf("3333\n");
+//        const char* text = gtk_clipboard_wait_for_text(clipboard);
+//        printf("4444\n");
+//        if (text != NULL) {
+//            printf("5555\n");
+//            strcpy(out, text);
+			getting_clipboard = STATE_LOW;
+//            g_free((gpointer)text);
+//        } else {
+//            printf("55__\n");
+//            strcpy(out, "");
+//            getting_clipboard = STATE_LOW;
+//        }
+//    } else {
+//        printf("33__\n");
+//        strcpy(out, "");
+//        getting_clipboard = STATE_LOW;
+//    }
+	return false;
+}
+
+void gui_set_clipboard(const char* text) {
+	gdk_threads_add_idle((GSourceFunc)clipboard_set_text, (gpointer)text);
+}
+
+void gui_get_clipboard(char* text_out) {
+	printf("get\n");
+	getting_clipboard = STATE_HIGH;
+	gdk_threads_add_idle((GSourceFunc)clipboard_get_text, text_out);
+	STATE_AWAIT(getting_clipboard, STATE_LOW, {});
+}
+
+int gui_main(void) {
 	root.client.pos.x = 100;
 	root.client.pos.y = 100;
 
@@ -761,6 +849,6 @@ int gui_main(void)
 	g_signal_connect(app, "activate", G_CALLBACK (activate), NULL);
 	char* argv[] = {""};
 	int status = g_application_run(G_APPLICATION (app), 0, argv);
-	g_object_unref (app);
+	g_object_unref(app);
 	return status;
 }
